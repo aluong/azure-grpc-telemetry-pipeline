@@ -15,7 +15,7 @@ The sample assumes you'll have your own network configuration and will deploy in
 ```shell
 cd terraform/dev-env
 terraform init
-terraform apply -var 'infraRG=pipeline-infra'
+terraform apply -var 'infra_resource_group_name=pipeline-infra'
 ```
 
 

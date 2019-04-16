@@ -1,4 +1,4 @@
-variable "infraRG" {
+variable "infra_resource_group_name" {
   type = "string"
 }
 
@@ -7,6 +7,7 @@ variable "location" {
   default = "westus2"
 }
 
+# Translated from https://docs.azuredatabricks.net/administration-guide/cloud-configurations/azure/udr.html
 variable "databricks_control_plane" {
   type = "map"
 

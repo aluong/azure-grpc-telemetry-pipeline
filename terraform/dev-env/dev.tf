@@ -5,20 +5,20 @@ provider "azurerm" {
 data "azurerm_client_config" "current" {}
 
 locals {
-  baseName = "${substr(base64sha256(azurerm_resource_group.rg.id), 0, 12)}"
+  baseName = "${substr(base64sha256(azurerm_resource_group.infra_rg.id), 0, 12)}"
   kvName   = "kv${local.baseName}"
   vnetName = "vnet${local.baseName}"
 }
 
-resource "azurerm_resource_group" "rg" {
-  name     = "${var.infraRG}"
+resource "azurerm_resource_group" "infra_rg" {
+  name     = "${var.infra_resource_group_name}"
   location = "${var.location}"
 }
 
 resource "azurerm_key_vault" "kv" {
   name                = "${local.kvName}"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  location            = "${azurerm_resource_group.infra_rg.location}"
+  resource_group_name = "${azurerm_resource_group.infra_rg.name}"
   tenant_id           = "${data.azurerm_client_config.current.tenant_id}"
 
   sku {
@@ -26,10 +26,11 @@ resource "azurerm_key_vault" "kv" {
   }
 }
 
+# Translated from https://docs.azuredatabricks.net/administration-guide/cloud-configurations/azure/vnet-inject.html#whitelisting-subnet-traffic
 resource "azurerm_network_security_group" "databricksNSG" {
   name                = "nsg-databricks"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  location            = "${azurerm_resource_group.infra_rg.location}"
+  resource_group_name = "${azurerm_resource_group.infra_rg.name}"
 
   security_rule {
     name                       = "databricks-control-plane-ssh"
@@ -37,7 +38,7 @@ resource "azurerm_network_security_group" "databricksNSG" {
     priority                   = 100
     access                     = "Allow"
     description                = "Required for Databricks control plane management of worker nodes."
-    source_address_prefix      = "${var.databricks_control_plane[azurerm_resource_group.rg.location]}"
+    source_address_prefix      = "${var.databricks_control_plane[azurerm_resource_group.infra_rg.location]}"
     source_port_range          = "*"
     protocol                   = "*"
     destination_address_prefix = "*"
@@ -50,7 +51,7 @@ resource "azurerm_network_security_group" "databricksNSG" {
     priority                   = 110
     access                     = "Allow"
     description                = "Required for Databricks control plane communication with worker nodes."
-    source_address_prefix      = "${var.databricks_control_plane[azurerm_resource_group.rg.location]}"
+    source_address_prefix      = "${var.databricks_control_plane[azurerm_resource_group.infra_rg.location]}"
     source_port_range          = "*"
     protocol                   = "*"
     destination_address_prefix = "*"
@@ -79,7 +80,7 @@ resource "azurerm_network_security_group" "databricksNSG" {
     source_address_prefix      = "*"
     source_port_range          = "*"
     protocol                   = "*"
-    destination_address_prefix = "${var.databricks_web_app[azurerm_resource_group.rg.location]}"
+    destination_address_prefix = "${var.databricks_web_app[azurerm_resource_group.infra_rg.location]}"
     destination_port_range     = "*"
   }
 
@@ -136,17 +137,17 @@ resource "azurerm_network_security_group" "databricksNSG" {
   }
 }
 
-resource "azurerm_network_security_group" "testNSG" {
-  name                = "nsg-test"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+resource "azurerm_network_security_group" "sandboxNSG" {
+  name                = "nsg-sandbox"
+  location            = "${azurerm_resource_group.infra_rg.location}"
+  resource_group_name = "${azurerm_resource_group.infra_rg.name}"
 
   security_rule {
     name                       = "allow-ssh"
     direction                  = "Inbound"
     priority                   = 100
     access                     = "Allow"
-    description                = "Allow SSH to test VMs."
+    description                = "Allow SSH to sandbox VMs."
     source_address_prefix      = "*"
     source_port_range          = "*"
     protocol                   = "*"
@@ -157,28 +158,28 @@ resource "azurerm_network_security_group" "testNSG" {
 
 resource "azurerm_virtual_network" "vnet" {
   name                = "${local.vnetName}"
-  location            = "${azurerm_resource_group.rg.location}"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
+  location            = "${azurerm_resource_group.infra_rg.location}"
+  resource_group_name = "${azurerm_resource_group.infra_rg.name}"
   address_space       = ["10.0.0.0/16"]
 }
 
-resource "azurerm_subnet" "test" {
-  name                 = "test"
-  resource_group_name  = "${azurerm_resource_group.rg.name}"
+resource "azurerm_subnet" "sandbox" {
+  name                 = "sandbox"
+  resource_group_name  = "${azurerm_resource_group.infra_rg.name}"
   virtual_network_name = "${azurerm_virtual_network.vnet.name}"
   address_prefix       = "10.0.1.0/24"
   service_endpoints    = ["Microsoft.EventHub"]
-  network_security_group_id = "${azurerm_network_security_group.testNSG.id}"
+  network_security_group_id = "${azurerm_network_security_group.sandboxNSG.id}"
 }
 
-resource "azurerm_subnet_network_security_group_association" "testNSGAssociation" {
-  subnet_id                 = "${azurerm_subnet.test.id}"
-  network_security_group_id = "${azurerm_network_security_group.testNSG.id}"
+resource "azurerm_subnet_network_security_group_association" "sandboxNSGAssociation" {
+  subnet_id                 = "${azurerm_subnet.sandbox.id}"
+  network_security_group_id = "${azurerm_network_security_group.sandboxNSG.id}"
 }
 
 resource "azurerm_subnet" "databricks-private" {
   name                 = "databricks-private"
-  resource_group_name  = "${azurerm_resource_group.rg.name}"
+  resource_group_name  = "${azurerm_resource_group.infra_rg.name}"
   virtual_network_name = "${azurerm_virtual_network.vnet.name}"
   address_prefix       = "10.0.2.0/24"
   service_endpoints    = ["Microsoft.EventHub"]
@@ -192,7 +193,7 @@ resource "azurerm_subnet_network_security_group_association" "databricks-private
 
 resource "azurerm_subnet" "databricks-public" {
   name                 = "databricks-public"
-  resource_group_name  = "${azurerm_resource_group.rg.name}"
+  resource_group_name  = "${azurerm_resource_group.infra_rg.name}"
   virtual_network_name = "${azurerm_virtual_network.vnet.name}"
   address_prefix       = "10.0.3.0/24"
   network_security_group_id = "${azurerm_network_security_group.databricksNSG.id}"
@@ -201,4 +202,16 @@ resource "azurerm_subnet" "databricks-public" {
 resource "azurerm_subnet_network_security_group_association" "databricks-publicNSGAssociation" {
   subnet_id                 = "${azurerm_subnet.databricks-public.id}"
   network_security_group_id = "${azurerm_network_security_group.databricksNSG.id}"
+}
+
+output "sandbox_subnet_id" {
+  value = "${azurerm_subnet.sandbox.id}"
+}
+
+output "databricks-private_subnet_id" {
+  value = "${azurerm_subnet.databricks-private.id}"
+}
+
+output "databricks-public_subnet_id" {
+  value = "${azurerm_subnet.databricks-public.id}"
 }
