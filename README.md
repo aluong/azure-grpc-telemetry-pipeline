@@ -1,3 +1,23 @@
+# azure-grpc-telemetry-pipeline
+
+This repository contains a sample implementation of a data pipeline to ingest streaming telemetry from Cisco IOS XR devices and process the data on Azure.
+
+# Usage
+
+Required tools:
+
+* [Terraform](https://www.terraform.io/)
+
+# Development
+
+The sample assumes you'll have your own network configuration and will deploy into your existing VNETs/subnets. To help with dev/test, we've provided a Terraform configuration that deploys everything needed to get up and running quickly.
+
+```shell
+cd terraform/dev-env
+terraform init
+terraform apply -var 'infraRG=pipeline-infra'
+```
+
 
 # Contributing
 
