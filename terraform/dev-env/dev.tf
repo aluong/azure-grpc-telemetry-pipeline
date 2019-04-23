@@ -5,7 +5,7 @@ provider "azurerm" {
 data "azurerm_client_config" "current" {}
 
 locals {
-  baseName = "${substr(base64sha256(azurerm_resource_group.infra_rg.id), 0, 12)}"
+  baseName = "${substr(sha256(azurerm_resource_group.infra_rg.id), 0, 12)}"
   kvName   = "kv${local.baseName}"
   vnetName = "vnet${local.baseName}"
 }
