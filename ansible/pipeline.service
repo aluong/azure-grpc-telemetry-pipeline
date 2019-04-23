@@ -1,0 +1,9 @@
+[Unit]
+Description=Systemd service to run pipeline.
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /etc/pipeline/startup.sh
+
+[Install]
+WantedBy=multi-user.target                      
