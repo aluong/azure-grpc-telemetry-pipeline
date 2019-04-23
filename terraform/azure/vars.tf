@@ -28,3 +28,18 @@ variable "messageRetentionInDays" {
   description = "The Event Hubs Standard tier allows message retention period for a maximum of seven days."
   type = "string"
 }
+
+# Databricks Workspace
+
+variable "vnetId" {
+  description = "ID of the VNET. Databricks workspace will deploy the subnnets into this vnet."
+  type = "string"
+}
+
+variable "databricksPrivateSubnet" {
+  type = "string"
+}
+
+variable "databricksPublicSubnet" {
+  type = "string"
+}
