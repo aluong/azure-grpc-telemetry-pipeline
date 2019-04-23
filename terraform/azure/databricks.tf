@@ -14,10 +14,10 @@ resource "azurerm_template_deployment" "databricksworkspace" {
       "vnetId": {
         "type": "string"
       },
-      "databricksPrivateSubnet": {
+      "databricksPrivateSubnetName": {
         "type": "string"
       },
-      "databricksPublicSubnet": {
+      "databricksPublicSubnetName": {
         "type": "string"
       }
     },
@@ -41,10 +41,10 @@ resource "azurerm_template_deployment" "databricksworkspace" {
               "value": "[parameters('vnetId')]"
             },
             "customPublicSubnetName": {
-              "value": "[parameters('databricksPublicSubnet')]"
+              "value": "[parameters('databricksPublicSubnetName')]"
             },
             "customPrivateSubnetName": {
-              "value": "[parameters('databricksPrivateSubnet')]"
+              "value": "[parameters('databricksPrivateSubnetName')]"
             }
           }
         }
@@ -57,8 +57,8 @@ DEPLOY
   # these key-value pairs are passed into the ARM Template's `parameters` block
   parameters = {
     "vnetId" = "${var.vnetId}"
-    "databricksPrivateSubnet" = "${var.databricksPrivateSubnet}"
-    "databricksPublicSubnet" = "${var.databricksPublicSubnet}"
+    "databricksPrivateSubnetName" = "${var.databricksPrivateSubnetName}"
+    "databricksPublicSubnetName" = "${var.databricksPublicSubnetName}"
     "prefix" = "${var.prefix}"
   }
 

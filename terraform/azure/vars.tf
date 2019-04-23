@@ -36,14 +36,23 @@ variable "messageRetentionInDays" {
 # Databricks Workspace
 
 variable "vnetId" {
-  description = "ID of the VNET. Databricks workspace will deploy the subnnets into this vnet."
+  description = "Resource ID of the VNET that Databricks will use for deploying clusters."
   type = "string"
 }
 
-variable "databricksPrivateSubnet" {
+variable "databricksPrivateSubnetName" {
+  description = "Name of the subnet to be used for cluster-internal communication"
   type = "string"
 }
 
-variable "databricksPublicSubnet" {
+variable "databricksPublicSubnetName" {
+  description = "Name of the subnet to be used for communication outside the cluster"
   type = "string"
+}
+
+# Key Vault
+
+variable "keyVaultId" {
+  description = "Resource ID of the Key Vault to be used for storing application secrets."
+  "type" = "string"
 }

@@ -204,8 +204,8 @@ resource "azurerm_subnet_network_security_group_association" "databricks-publicN
   network_security_group_id = "${azurerm_network_security_group.databricksNSG.id}"
 }
 
-output "keyvault_name" {
-  value = "${azurerm_key_vault.kv.name}"
+output "keyvault_id" {
+  value = "${azurerm_key_vault.kv.id}"
 }
 
 output "sandbox_subnet_id" {

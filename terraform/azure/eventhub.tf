@@ -1,3 +1,6 @@
+locals {
+  eventHubNamespace = "eh-${var.prefix}"
+}
 
 resource "azurerm_template_deployment" "eventhub" {
   name                = "${var.prefix}-eventhub"
@@ -8,9 +11,8 @@ resource "azurerm_template_deployment" "eventhub" {
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-      "prefix": {
-        "type": "string",
-        "defaultValue": "[take(tolower(uniqueString(resourceGroup().id)), 12)]"
+      "ehNamespace": {
+        "type": "string"
       },
       "subnetIds": {
         "type": "array",
@@ -33,7 +35,6 @@ resource "azurerm_template_deployment" "eventhub" {
       }
     },
     "variables": {
-      "ehNamespace": "[concat('eh-', parameters('prefix'))]",
       "ehName": "telemetry",
       "consumerGroups": [
         "databricks"
@@ -43,7 +44,7 @@ resource "azurerm_template_deployment" "eventhub" {
       {
         "apiVersion": "2017-04-01",
         "type": "Microsoft.EventHub/namespaces",
-        "name": "[variables('ehNamespace')]",
+        "name": "[parameters('ehNamespace')]",
         "location": "[resourceGroup().location]",
         "sku": {
           "name": "Standard",
@@ -55,11 +56,11 @@ resource "azurerm_template_deployment" "eventhub" {
       },
       {
         "dependsOn": [
-          "[resourceId('Microsoft.EventHub/namespaces', variables('ehNamespace'))]"
+          "[resourceId('Microsoft.EventHub/namespaces', parameters('ehNamespace'))]"
         ],
         "apiVersion": "2017-04-01",
         "type": "Microsoft.EventHub/namespaces/eventhubs",
-        "name": "[concat(variables('ehNamespace'), '/', variables('ehName'))]",
+        "name": "[concat(parameters('ehNamespace'), '/', variables('ehName'))]",
         "properties": {
           "messageRetentionInDays": "[parameters('messageRetentionInDays')]",
           "partitionCount": "[parameters('partitionCount')]",
@@ -82,7 +83,7 @@ resource "azurerm_template_deployment" "eventhub" {
       },
       {
         "dependsOn": [
-          "[resourceId('Microsoft.EventHub/namespaces/eventHubs', variables('ehNamespace'), variables('ehName'))]"
+          "[resourceId('Microsoft.EventHub/namespaces/eventHubs', parameters('ehNamespace'), variables('ehName'))]"
         ],
         "copy": {
           "name": "cgCopy",
@@ -90,12 +91,12 @@ resource "azurerm_template_deployment" "eventhub" {
         },
         "apiVersion": "2017-04-01",
         "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
-        "name": "[concat(variables('ehNamespace'), '/', variables('ehName'), '/', variables('consumerGroups')[copyIndex()])]",
+        "name": "[concat(parameters('ehNamespace'), '/', variables('ehName'), '/', variables('consumerGroups')[copyIndex()])]",
         "properties": {}
       },
       {
         "dependsOn": [
-          "[resourceId('Microsoft.EventHub/namespaces', variables('ehNamespace'))]"
+          "[resourceId('Microsoft.EventHub/namespaces', parameters('ehNamespace'))]"
         ],
         "copy": {
           "name": "networkRuleCopy",
@@ -103,7 +104,7 @@ resource "azurerm_template_deployment" "eventhub" {
         },
         "apiVersion": "2018-01-01-preview",
         "type": "Microsoft.EventHub/namespaces/virtualnetworkrules",
-        "name": "[concat(variables('ehNamespace'), '/vnet-', copyIndex())]",
+        "name": "[concat(parameters('ehNamespace'), '/vnet-', copyIndex())]",
         "properties": {
           "virtualNetworkSubnetId": "[parameters('subnetIds')[copyIndex()]]"
         }
@@ -116,11 +117,41 @@ DEPLOY
 
   # these key-value pairs are passed into the ARM Template's `parameters` block
   parameters = {
-    "prefix" = "${var.prefix}",
+    "ehNamespace" = "${local.eventHubNamespace}",
     "messageRetentionInDays" = "${var.messageRetentionInDays}",
     "partitionCount" = "${var.partitionCount}",
     "captureStorageAccountId" = "${azurerm_storage_account.capture.id}"
   }
 
   deployment_mode = "Incremental"
+}
+
+resource "azurerm_eventhub_namespace_authorization_rule" "writer-pipeline" {
+  name = "pipeline"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  namespace_name = "${local.eventHubNamespace}"
+  listen = false
+  send = true
+  manage = false
+}
+
+resource "azurerm_eventhub_namespace_authorization_rule" "reader-databricks" {
+  name = "databricks"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  namespace_name = "${local.eventHubNamespace}"
+  listen = true
+  send = false
+  manage = false
+}
+
+resource "azurerm_key_vault_secret" "writer-pipeline" {
+  name     = "eh-pipeline"
+  value    = "${azurerm_eventhub_namespace_authorization_rule.writer-pipeline.primary_connection_string}"
+  key_vault_id = "${var.keyVaultId}"
+}
+
+resource "azurerm_key_vault_secret" "reader-databricks" {
+  name     = "eh-databricks"
+  value    = "${azurerm_eventhub_namespace_authorization_rule.reader-databricks.primary_connection_string}"
+  key_vault_id = "${var.keyVaultId}"
 }
