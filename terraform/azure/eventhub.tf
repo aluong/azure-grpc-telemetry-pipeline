@@ -23,6 +23,13 @@ resource "azurerm_template_deployment" "eventhub" {
       "partitionCount": {
         "type": "string",
         "defaultValue": "4"
+      },
+      "captureStorageAccountId": {
+        "type": "string"
+      },
+      "captureStorageContainer": {
+        "type": "string",
+        "defaultValue": "telemetry"
       }
     },
     "variables": {
@@ -55,7 +62,22 @@ resource "azurerm_template_deployment" "eventhub" {
         "name": "[concat(variables('ehNamespace'), '/', variables('ehName'))]",
         "properties": {
           "messageRetentionInDays": "[parameters('messageRetentionInDays')]",
-          "partitionCount": "[parameters('partitionCount')]"
+          "partitionCount": "[parameters('partitionCount')]",
+          "captureDescription": {
+          "enabled": true,
+          "skipEmptyArchives": true,
+          "encoding": "Avro",
+          "intervalInSeconds": 60,
+          "sizeLimitInBytes": 10485760,
+          "destination": {
+            "name": "EventHubArchive.AzureBlockBlob",
+            "properties": {
+              "storageAccountResourceId": "[parameters('captureStorageAccountId')]",
+              "blobContainer": "[parameters('captureStorageContainer')]",
+              "archiveNameFormat": "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}"
+            }
+          }
+        }
         }
       },
       {
@@ -96,7 +118,8 @@ DEPLOY
   parameters = {
     "prefix" = "${var.prefix}",
     "messageRetentionInDays" = "${var.messageRetentionInDays}",
-    "partitionCount" = "${var.partitionCount}"
+    "partitionCount" = "${var.partitionCount}",
+    "captureStorageAccountId" = "${azurerm_storage_account.capture.id}"
   }
 
   deployment_mode = "Incremental"

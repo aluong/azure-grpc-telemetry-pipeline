@@ -19,12 +19,11 @@ resource "azurerm_template_deployment" "databricksworkspace" {
       },
       "databricksPublicSubnet": {
         "type": "string"
-      },
+      }
     },
     "variables": {
       "databricksWorkspace": "[parameters('prefix')]",
-      "managedResourceGroupId": "[concat(subscription().id, '/resourceGroups/databricks-rg-', variables('databricksWorkspace'))]",
-      "managedResourceGroupName": "[concat('databricks-rg-', variables('databricksWorkspace'), '-', uniqueString(variables('databricksWorkspace'), resourceGroup().id))]"
+      "managedResourceGroupId": "[concat(subscription().id, '/resourceGroups/databricks-rg-', variables('databricksWorkspace'))]"
     },
     "resources": [
       {
@@ -50,8 +49,7 @@ resource "azurerm_template_deployment" "databricksworkspace" {
           }
         }
       }
-    ],
-    "outputs": {}
+    ]
   }
 
 DEPLOY

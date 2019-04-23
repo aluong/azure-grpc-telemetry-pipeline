@@ -1,3 +1,7 @@
+locals {
+  baseName = "${substr(sha256(azurerm_resource_group.rg.id), 0, 12)}"
+}
+
 # Common properties
 
 variable "resource_group_name" {

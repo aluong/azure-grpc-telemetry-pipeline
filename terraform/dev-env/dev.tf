@@ -182,7 +182,6 @@ resource "azurerm_subnet" "databricks-private" {
   resource_group_name  = "${azurerm_resource_group.infra_rg.name}"
   virtual_network_name = "${azurerm_virtual_network.vnet.name}"
   address_prefix       = "10.0.2.0/24"
-  service_endpoints    = ["Microsoft.EventHub"]
   network_security_group_id = "${azurerm_network_security_group.databricksNSG.id}"
 }
 
@@ -196,6 +195,7 @@ resource "azurerm_subnet" "databricks-public" {
   resource_group_name  = "${azurerm_resource_group.infra_rg.name}"
   virtual_network_name = "${azurerm_virtual_network.vnet.name}"
   address_prefix       = "10.0.3.0/24"
+  service_endpoints    = ["Microsoft.EventHub", "Microsoft.Storage"]
   network_security_group_id = "${azurerm_network_security_group.databricksNSG.id}"
 }
 
