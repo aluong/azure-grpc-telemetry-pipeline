@@ -8,6 +8,11 @@ Required tools:
 
 * [Terraform](https://www.terraform.io/)
 
+From terraform/azure folder:
+- Create a file named terraform.tfvars, copy content from sample.tfvars and update variables with appropriate values.
+- Run ```terrform init```
+- Run ```terrform apply```
+
 # Development
 
 The sample assumes you'll have your own network configuration and will deploy into your existing VNETs/subnets. To help with dev/test, we've provided a Terraform configuration that deploys everything needed to get up and running quickly.
