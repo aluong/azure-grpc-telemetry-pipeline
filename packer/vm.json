@@ -17,30 +17,20 @@
             "managed_image_resource_group_name": "{{user `resource_group_name`}}",
             "managed_image_name": "linuxImage-{{isotime | clean_image_name}}",
             "os_type": "Linux",
-            "image_publisher": "Canonical",
-            "image_offer": "UbuntuServer",
-            "image_sku": "16.04-LTS",
+            "image_publisher": "RedHat",
+            "image_offer": "RHEL",
+            "image_sku": "7.3",
             "azure_tags": {
                 "task": "Image deployment"
             },
             "location": "East US",
-            "vm_size": "Standard_DS2_v2"
+            "vm_size": "Standard_D2_v3"
         }
     ],
     "provisioners": [
         {
-            "type": "shell",
-            "inline": [
-                "sudo apt-get -y update"
-            ]
-        },
-        {
-            "type": "shell",
-            "inline_shebang": "/bin/sh -x",
-            "inline": [
-                "sudo mkdir /app",
-                "sudo touch /app/CreatedByPacker.log"
-            ]
+            "type": "ansible",
+            "playbook_file": "../ansible/pipeline.playbook.yml"
         },
         {
             "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
