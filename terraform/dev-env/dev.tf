@@ -15,6 +15,12 @@ resource "azurerm_resource_group" "infra_rg" {
   location = "${var.location}"
 }
 
+resource "azurerm_user_assigned_identity" "pipeline_identity" {
+  name                 = "pipeline_identity"
+  resource_group_name  = "${azurerm_resource_group.infra_rg.name}"
+  location             = "${azurerm_resource_group.infra_rg.location}"
+}
+
 resource "azurerm_key_vault" "kv" {
   name                = "${local.kvName}"
   location            = "${azurerm_resource_group.infra_rg.location}"
@@ -24,6 +30,19 @@ resource "azurerm_key_vault" "kv" {
   sku {
     name = "standard"
   }
+}
+
+resource "azurerm_key_vault_access_policy" "pipeline_identity" {
+  vault_name          = "${azurerm_key_vault.kv.name}"
+  resource_group_name = "${azurerm_key_vault.kv.resource_group_name}"
+
+  tenant_id = "${data.azurerm_client_config.current.tenant_id}"
+  object_id = "${azurerm_user_assigned_identity.pipeline_identity.principal_id}"
+
+  secret_permissions = [
+    "list",
+    "get",
+  ]
 }
 
 # Translated from https://docs.azuredatabricks.net/administration-guide/cloud-configurations/azure/vnet-inject.html#whitelisting-subnet-traffic
@@ -218,4 +237,8 @@ output "databricks-private_subnet_id" {
 
 output "databricks-public_subnet_id" {
   value = "${azurerm_subnet.databricks-public.id}"
+}
+
+output "pipeline_identity_id" {
+  value = "${azurerm_user_assigned_identity.pipeline_identity.id}"
 }

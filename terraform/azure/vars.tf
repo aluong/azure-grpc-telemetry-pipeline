@@ -16,6 +16,44 @@ variable "prefix" {
   description = "The Prefix used for resources."
 }
 
+variable "infra_sandbox_subnet_name" {
+  description = "Name of the subnet to be used for the sandbox"
+  type = "string"
+}
+
+variable "infra_virtual_network_name" {
+  description = "Name of the infra virtual network"
+  type = "string"
+}
+
+variable "infra_resource_group_name" {
+  description = "Name of the infra resource group"
+  type = "string"
+}
+
+# VM 
+
+variable "custom_image_resource_group_name" {
+  description = "The resource group for the custom vm image"
+  type = "string"
+}
+
+variable "custom_image_name" {
+  description = "The name of the custom vm image"
+  type = "string"
+}
+
+variable "vm_size" {
+  description = "Size of the vm"
+  type = "string"
+  default = "Standard_D2_V2"
+}
+
+variable "user_identities" {
+  description = "User identities assigned to the virtual machine"
+  type = "list"
+}
+
 
 # EventHub
 

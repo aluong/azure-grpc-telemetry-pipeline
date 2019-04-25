@@ -4,7 +4,8 @@
         "client_secret": "{{env `AZURE_CLIENT_SECRET`}}",
         "subscription_id": "{{env `AZURE_SUBSCRIPTION_ID`}}",
         "tenant_id": "{{env `AZURE_TENANT_ID`}}",
-        "resource_group_name": "{{env `PACKER_IMAGE_RESOURCE_GROUP`}}"
+        "resource_group_name": "{{env `PACKER_IMAGE_RESOURCE_GROUP`}}",
+        "location": "{{env `PACKER_IMAGE_LOCATION`}}"
     },
     "sensitive-variables": ["client_secret"],
     "builders": [
@@ -23,7 +24,7 @@
             "azure_tags": {
                 "task": "Image deployment"
             },
-            "location": "East US",
+            "location": "{{user `location`}}",
             "vm_size": "Standard_D2_v3"
         }
     ],

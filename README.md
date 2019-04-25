@@ -23,6 +23,23 @@ terraform init
 terraform apply -var 'infra_resource_group_name=pipeline-infra'
 ```
 
+### Accessing Azure VM 
+First, we need to create a public ip address and assign it the nic attached to the vm.
+```
+RESOURCE_GROUP_NAME=azure-pipeline-rg
+az network public-ip create -g $RESOURCE_GROUP_NAME --name publicip1 --allocation-method Static
+az network nic ip-config create -g $RESOURCE_GROUP_NAME --nic-name <<NIC_NAME>> --name testconfiguration1 --public-ip-address publicip1
+
+```
+
+Finally, we can set the SSH keys so that we can SSH into the vm.
+```
+az vm user update \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --name <<VM_NAME>> \
+  --username azureuser \
+  --ssh-key-value ~/.ssh/id_rsa.pub
+```
 
 # Contributing
 
