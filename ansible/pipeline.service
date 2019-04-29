@@ -3,7 +3,7 @@ Description=Systemd service to run pipeline.
 
 [Service]
 Type=simple
-ExecStart=/bin/bash /etc/pipeline/startup.sh
+ExecStart=/bin/bash /etc/pipeline/startup.sh /var/lib/cloud/instance/user-data.txt
 
 [Install]
-WantedBy=multi-user.target                      
+WantedBy=multi-user.target

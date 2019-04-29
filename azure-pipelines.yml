@@ -1,0 +1,90 @@
+pool:
+  vmImage: ubuntu-16.04
+
+variables:
+  azureSubscription: network-telemetry
+  infraResourceGroup: network-telemetry-infra
+  imageResourceGroup: network-telemetry-images
+  location: westus2
+  # Uncomment the following variables here, or set them in the Azure Pipelines UX
+  # tfBackendStorageAccount: mystorage
+  # tfBackendResourceGroup: terraform-backend
+
+steps:
+
+- bash: |
+    curl -LO https://releases.hashicorp.com/packer/1.4.0/packer_1.4.0_linux_amd64.zip
+    sudo unzip packer_1.4.0_linux_amd64.zip -d /usr/local/bin
+  displayName: Download Packer
+
+- task: AzureCLI@1
+  displayName: Define resources needed for deployment
+  inputs:
+    azureSubscription: $(azureSubscription)
+    scriptLocation: inlineScript
+    inlineScript: |
+      set -euo pipefail
+      az group create -n $(tfBackendResourceGroup) -l $(location)
+      az group create -n $(imageResourceGroup) -l $(location)
+      az storage account create -g $(tfBackendResourceGroup) -n $(tfBackendStorageAccount) --sku Standard_LRS
+      az storage container create -n terraform --account-name $(tfBackendStorageAccount)
+
+- task: AzureCLI@1
+  displayName: Set env vars for Terraform
+  inputs:
+    azureSubscription: $(azureSubscription)
+    scriptLocation: inlineScript
+    addSpnToEnvironment: true
+    inlineScript: |
+      set -euo pipefail
+      SUB_ID=`az account show --query id -o tsv`
+      TENANT_ID=`az account show --query tenantId -o tsv`
+      
+      # Configure Terraform SP auth (https://www.terraform.io/docs/providers/azurerm/auth/service_principal_client_secret.html)
+      echo "##vso[task.setvariable variable=ARM_CLIENT_ID]$servicePrincipalId"
+      echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET]$servicePrincipalKey"
+      echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID]$SUB_ID"
+      echo "##vso[task.setvariable variable=ARM_TENANT_ID]$TENANT_ID"
+
+- bash: |
+    set -euo pipefail
+    terraform init \
+      --backend-config='storage_account_name=$(tfBackendStorageAccount)' \
+      --backend-config='resource_group_name=$(tfBackendResourceGroup)'
+    terraform apply \
+      -var 'infra_resource_group_name=$(infraResourceGroup)' \
+      -auto-approve
+  displayName: Deploy dev infra
+  workingDirectory: terraform/dev-env
+
+- bash: |
+    set -euo pipefail
+    packer build vm.json | tee packer.log
+    copy packer.log $(Build.ArtifactStagingDirectory)
+    CUSTOM_IMAGE_NAME=`cat packer.log | tee packer.log | grep ManagedImageName | sed -n -e 's/^ManagedImageName: //p'`
+    echo "Created Custom Image: ${CUSTOM_IMAGE_NAME}"
+    CUSTOM_IMAGE_ID=`az image show -g $PACKER_IMAGE_RESOURCE_GROUP --name $CUSTOM_IMAGE_NAME --query id | sed -e "s/\"//g"`
+    echo "Custom Image Id: ${CUSTOM_IMAGE_ID}"
+    echo "##vso[task.setvariable variable=CUSTOM_IMAGE_ID]$CUSTOM_IMAGE_ID"
+  displayName: Create custom image via Packer
+  workingDirectory: packer
+  env:
+    PACKER_IMAGE_RESOURCE_GROUP: $(imageResourceGroup)
+    PACKER_IMAGE_LOCATION: $(location)
+    AZURE_CLIENT_ID: $(ARM_CLIENT_ID)
+    AZURE_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+    AZURE_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+    AZURE_TENANT_ID: $(ARM_TENANT_ID)
+
+# - bash: |
+#     set -euo pipefail
+#     terraform init
+#     terraform apply -auto-approve
+#   displayName: Deploy solution
+#   workingDirectory: terraform/azure
+
+- task: PublishBuildArtifacts@1
+  condition: always()
+  inputs:
+    pathToPublish: $(Build.ArtifactStagingDirectory)
+    artifactName: drop

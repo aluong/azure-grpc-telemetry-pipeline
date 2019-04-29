@@ -1,13 +1,74 @@
-az login --identity --allow-no-subscriptions
+#!/bin/sh
+set -euo pipefail
 
-hostname=`hostname`
-openssl req -newkey rsa:4096 -nodes -keyout /etc/pipeline/pipeline_vm_key.pem -x509 -out /etc/pipeline/pipeline_vm_cert.pem  -subj "/C=US/ST=WA/L=Redmond/O=Microsoft/CN=${hostname}" 
+CONFIG_PATH=''
+BROKERS=''
+SECRET_ID=''
 
-export TLS_SERVERNAME=$hostname
+show_usage() {
+  echo "Usage: startup.sh --config <config_path>"
+  echo "Config should be in the following format:"
+BROKERS=myeventhubnamespace.servicebus.windows.net:9093
+SECRET_ID=https://mykeyvault.vault.azure.net/secrets/mysecret/myversion
+}
 
-export PIPELINE_mykafka_saslPassword=`az keyvault secret show --vault-name anzoloch-test-keyvault --id https://anzoloch-test-keyvault.vault.azure.net/secrets/pipeline-mykafka-saslPassword --query value`
-export PIPELINE_mykafka_brokers=`az keyvault secret show --vault-name anzoloch-test-keyvault --id https://anzoloch-test-keyvault.vault.azure.net/secrets/pipeline-mykafka-brokers --query value`
+parse_arguments() {
+  PARAMS=""
+  while (( $# )); do
+    case "$1" in
+      -h|--help)
+        show_usage
+        exit 0
+        ;;
+      -c|--config)
+        CONFIG_PATH=$2
+        shift 2
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*|--*)
+        echo "Unsupported flag $1" >&2
+        exit 1
+        ;;
+      *)
+        PARAMS="$PARAMS $1"
+        shift
+        ;;
+    esac
+  done
+}
 
+validate_arguments() {
+  if [[ -z $CONFIG_PATH ]]; then
+    show_usage
+    exit 1
+  fi
 
-touch /etc/pipeline/pipeline.log
-/etc/pipeline/pipeline -log=/etc/pipeline/pipeline.log -config=/etc/pipeline/pipeline.conf
+  source $CONFIG_PATH
+
+  if [[ -z $BROKERS | -z $SECRET_ID ]]; then
+    show_usage
+    exit 1
+  fi
+}
+
+start() {
+    az login --identity --allow-no-subscriptions
+
+    HOSTNAME=`hostname`
+    openssl req -newkey rsa:4096 -nodes -keyout /etc/pipeline/pipeline_vm_key.pem -x509 -out /etc/pipeline/pipeline_vm_cert.pem  -subj "/CN=${HOSTNAME}" 
+
+    export TLS_SERVERNAME=$HOSTNAME
+
+    export PIPELINE_mykafka_saslPassword=`az keyvault secret show --id $SECRET_ID --query value`
+    export PIPELINE_mykafka_brokers=$BROKERS
+
+    touch /etc/pipeline/pipeline.log
+    /etc/pipeline/pipeline -log=/etc/pipeline/pipeline.log -config=/etc/pipeline/pipeline.conf
+}
+
+parse_arguments "$@"
+validate_arguments
+start

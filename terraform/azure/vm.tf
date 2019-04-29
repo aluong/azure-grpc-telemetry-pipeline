@@ -41,6 +41,10 @@ resource "azurerm_virtual_machine" "pipeline" {
     computer_name  = "${local.virtual_machine_name}"
     admin_username = "${local.virtual_machine_user_name}"
     admin_password = "${uuid()}"
+    custom_data = <<-EOF
+BROKERS=${local.eventHubNamespace}.servicebus.windows.net:9093
+SECRET_ID=${azurerm_key_vault_secret.writer-pipeline.id}
+  EOF
   }
 
   os_profile_linux_config {
