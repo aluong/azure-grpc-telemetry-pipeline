@@ -17,6 +17,13 @@ steps:
     sudo unzip packer_1.4.0_linux_amd64.zip -d /usr/local/bin
   displayName: Download Packer
 
+- bash: |
+    sudo apt-get update
+    sudo apt-get install software-properties-common
+    sudo apt-add-repository --yes --update ppa:ansible/ansible
+    sudo apt-get install ansible
+  displayName: Update Ansible
+
 - task: AzureCLI@1
   displayName: Define resources needed for deployment
   inputs:
@@ -48,17 +55,6 @@ steps:
 
 - bash: |
     set -euo pipefail
-    terraform init \
-      --backend-config='storage_account_name=$(tfBackendStorageAccount)' \
-      --backend-config='resource_group_name=$(tfBackendResourceGroup)'
-    terraform apply \
-      -var 'infra_resource_group_name=$(infraResourceGroup)' \
-      -auto-approve
-  displayName: Deploy dev infra
-  workingDirectory: terraform/dev-env
-
-- bash: |
-    set -euo pipefail
     packer build vm.json | tee packer.log
     copy packer.log $(Build.ArtifactStagingDirectory)
     CUSTOM_IMAGE_NAME=`cat packer.log | tee packer.log | grep ManagedImageName | sed -n -e 's/^ManagedImageName: //p'`
@@ -75,6 +71,17 @@ steps:
     AZURE_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
     AZURE_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
     AZURE_TENANT_ID: $(ARM_TENANT_ID)
+
+- bash: |
+    set -euo pipefail
+    terraform init \
+      --backend-config='storage_account_name=$(tfBackendStorageAccount)' \
+      --backend-config='resource_group_name=$(tfBackendResourceGroup)'
+    terraform apply \
+      -var 'infra_resource_group_name=$(infraResourceGroup)' \
+      -auto-approve
+  displayName: Deploy dev infra
+  workingDirectory: terraform/dev-env
 
 # - bash: |
 #     set -euo pipefail
