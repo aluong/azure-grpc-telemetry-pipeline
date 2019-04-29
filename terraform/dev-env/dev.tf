@@ -173,6 +173,19 @@ resource "azurerm_network_security_group" "sandboxNSG" {
     destination_address_prefix = "*"
     destination_port_range     = "22"
   }
+
+  security_rule {
+    name                       = "allow-https"
+    direction                  = "Inbound"
+    priority                   = 110
+    access                     = "Allow"
+    description                = "Allow HTTPS to sandbox VMs."
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    protocol                   = "*"
+    destination_address_prefix = "*"
+    destination_port_range     = "443"
+  }
 }
 
 resource "azurerm_virtual_network" "vnet" {

@@ -4,6 +4,7 @@
 ```az ad sp create-for-rbac --name packer-test```
 
 - Install [packer](https://www.packer.io/intro/getting-started/install.html)
+- Install [ansible](https://docs.ansible.com/ansible/2.4/intro_installation.html)
 
 
 # Export Environment Variables

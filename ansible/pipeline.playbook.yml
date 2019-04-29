@@ -14,9 +14,9 @@
       dest: /etc/pipeline/pipeline
       mode: 0755
 
-  - name: Download cisco bigmuddy pipeline config file
-    get_url:
-      url: https://nobun.blob.core.windows.net/pipeline/pipeline.conf?sp=r&st=2019-04-23T20:52:28Z&se=2020-01-01T08:00:00Z&spr=https&sv=2018-03-28&sig=WQYrU%2FeUJFEOQvOV9cCF9umWeuGb2bIwYNGuEiIIBFs%3D&sr=b
+  - name: Copy cisco bigmuddy pipeline config file
+    copy:
+      src: ./pipeline.conf
       dest: /etc/pipeline/pipeline.conf
 
   - name: Import the Microsoft repository key.
@@ -29,9 +29,6 @@
     yum:
       name: azure-cli
       state: present
-
-  - name: Create self-signed certificate
-    command: openssl req -new -newkey rsa:4096 -nodes -keyout /etc/pipeline/pipeline_vm.key -out /etc/pipeline/pipeline_vm.csr  -subj "/C=XX/ST=X/L=X/O=X/CN=X"
 
   - name: Copy startup.sh
     copy:
