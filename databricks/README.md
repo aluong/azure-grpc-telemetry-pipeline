@@ -14,25 +14,6 @@
 
 3. Click Grant permissions and then Yes. You must be an admin user to perform this step.
 
-# Get Authorization Code from app registration
-The authorization code can be obtained by sending an HTTP request in the browser by composing a URL as described in the Microsoft document [Request an authorization code.](https://docs.microsoft.com/en-us/azure/active-directory/develop/v1-protocols-oauth-code#request-an-authorization-code)
-
- An example URL is:
-
-```
-// Line breaks for legibility only
-
-https://login.microsoftonline.com/{tenant}/oauth2/authorize?
-client_id={client_id}
-&response_type=code
-&redirect_uri={redirect_uri in encoded format: e.g., http%3A%2F%2Flocalhost}
-&response_mode=query
-&resource=2ff814a6-3304-4ab8-85cb-cd0e6f879c1d
-&state={a random number or some encoded info}
-```
-
-Please replace the highlighted fields accordingly
-
 # Run script
 
 1. Fill in the [config.json](./config.json) file. 

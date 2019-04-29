@@ -13,8 +13,6 @@ class Config(object):
     subscription_id = ""
     client_id = ""
     client_secret = ""
-    redirect_uri = ""
-    authorization_code = ""
     databricks_workspace_name = ""
     databricks_host_url = ""
     databricks_resource_group_name = ""

@@ -7,6 +7,7 @@ import requests
 from adal import AuthenticationContext
 
 from config import Config
+from aad_authentication import get_authorization_code
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", action="store", dest="config_file", help="Pass the JSON config file to use")
@@ -27,20 +28,21 @@ class DatabricksAuthenticationClient:
         )
 
     def _get_token_from_auth_code(self):
+        auth_code = get_authorization_code(self.config, self.databricks_resource_id)
         context = AuthenticationContext(self.authority_url)
 
         if self.config.client_id != "":
             token_response = context.acquire_token_with_authorization_code(
-                self.config.authorization_code,
-                self.config.redirect_uri,
+                auth_code['code'],
+                auth_code['reply_url'],
                 self.databricks_resource_id,
                 self.config.client_id,
                 client_secret=self.config.client_secret
             )
         else:
             token_response = context.acquire_token_with_authorization_code(
-                self.config.authorization_code,
-                self.config.redirect_uri,
+                auth_code['code'],
+                auth_code['reply_url'],
                 self.databricks_resource_id,
                 self.config.client_id
             )
