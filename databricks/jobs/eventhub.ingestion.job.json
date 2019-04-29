@@ -13,6 +13,6 @@
         }
     ],
     "notebook_task": {
-        "notebook_path": "/notebooks/eventhub_ingestion"
+        "notebook_path": "/notebooks/eventhub_ingestion.scala"
     }
 }

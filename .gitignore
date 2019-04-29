@@ -34,3 +34,9 @@ override.tf.json
 
 # Packer files
 packer.log
+
+# Python files
+*.pyc
+__pycache__/
+
+refresh_token.txt
