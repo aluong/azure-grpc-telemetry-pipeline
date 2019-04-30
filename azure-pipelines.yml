@@ -4,7 +4,9 @@ pool:
 variables:
   azureSubscription: network-telemetry
   infraResourceGroup: network-telemetry-infra
+  pipelineResourceGroup: network-telemetry-pipeline
   imageResourceGroup: network-telemetry-images
+  prefix: pipeline
   location: westus2
   # Uncomment the following variables here, or set them in the Azure Pipelines UX
   # tfBackendStorageAccount: mystorage
@@ -83,12 +85,32 @@ steps:
   displayName: Deploy dev infra
   workingDirectory: terraform/dev-env
 
-# - bash: |
-#     set -euo pipefail
-#     terraform init
-#     terraform apply -auto-approve
-#   displayName: Deploy solution
-#   workingDirectory: terraform/azure
+- bash: |
+    set -euo pipefail
+    terraform init \
+      --backend-config='storage_account_name=$(tfBackendStorageAccount)' \
+      --backend-config='resource_group_name=$(tfBackendResourceGroup)'
+    terraform apply \
+      -var 'resource_group_name=$(pipelineResourceGroup)' \
+      -var 'location=$(location)' \
+      -var 'prefix=$(prefix)' \
+      -var 'partitionCount=4' \
+      -var 'messageRetentionInDays=1' \
+      -var 'infra_sandbox_subnet_name=$(INFRA_SANDBOX_SUBNET_NAME)' \
+      -var 'infra_virtual_network_name=$(INFRA_VIRTUAL_NETWORK_NAME)' \
+      -var 'infra_resource_group_name=$(infraResourceGroup)'  \
+      -var 'subnetIds=$(SUBNET_IDS)' \
+      -var 'vnetId=$(VNET_ID)' \
+      -var 'databricksPrivateSubnetName=databricks-private' \
+      -var 'databricksPublicSubnetName=databricks-public' \
+      -var 'custom_image_resource_group_name=$(imageResourceGroup)' \
+      -var 'custom_image_name=$(CUSTOM_IMAGE_NAME)' \
+      -var 'user_identities=$(USER_MANAGED_IDENTITIES)' \
+      -var 'keyVaultId=$(KEYVAULT_ID)' \
+      -auto-approve
+
+  displayName: Deploy solution
+  workingDirectory: terraform/azure
 
 - task: PublishBuildArtifacts@1
   condition: always()

@@ -133,6 +133,7 @@ resource "azurerm_eventhub_namespace_authorization_rule" "writer-pipeline" {
   listen = false
   send = true
   manage = false
+  depends_on = ["azurerm_template_deployment.eventhub"]
 }
 
 resource "azurerm_eventhub_namespace_authorization_rule" "reader-databricks" {
@@ -142,6 +143,7 @@ resource "azurerm_eventhub_namespace_authorization_rule" "reader-databricks" {
   listen = true
   send = false
   manage = false
+  depends_on = ["azurerm_template_deployment.eventhub"]
 }
 
 resource "azurerm_key_vault_secret" "writer-pipeline" {

@@ -45,6 +45,20 @@ resource "azurerm_key_vault_access_policy" "pipeline_identity" {
   ]
 }
 
+resource "azurerm_key_vault_access_policy" "ado_service_connection" {
+  vault_name          = "${azurerm_key_vault.kv.name}"
+  resource_group_name = "${azurerm_key_vault.kv.resource_group_name}"
+
+  tenant_id = "${data.azurerm_client_config.current.tenant_id}"
+  object_id = "${data.azurerm_client_config.current.service_principal_object_id}"
+
+  secret_permissions = [
+    "list",
+    "get",
+    "set",
+  ]
+}
+
 # Translated from https://docs.azuredatabricks.net/administration-guide/cloud-configurations/azure/vnet-inject.html#whitelisting-subnet-traffic
 resource "azurerm_network_security_group" "databricksNSG" {
   name                = "nsg-databricks"
@@ -238,6 +252,10 @@ resource "azurerm_subnet_network_security_group_association" "databricks-publicN
 
 output "keyvault_id" {
   value = "${azurerm_key_vault.kv.id}"
+}
+
+output "vnet_id" {
+  value = "${azurerm_virtual_network.vnet.id}"
 }
 
 output "sandbox_subnet_id" {
