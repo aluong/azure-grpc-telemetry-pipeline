@@ -3,6 +3,7 @@ import org.apache.spark.sql.functions.{ explode, split }
 
 val eventhub_connection = dbutils.secrets.get("azure-key-vault", "eh-databricks")
 val connectionString = ConnectionStringBuilder(eventhub_connection)
+  .setEventHubName("telemetry")
   .build
 val eventHubsConf = EventHubsConf(connectionString)
   .setStartingPosition(EventPosition.fromEndOfStream)
