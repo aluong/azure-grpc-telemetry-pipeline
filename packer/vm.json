@@ -1,11 +1,12 @@
 {
     "variables": {
-        "client_id": "{{env `AZURE_CLIENT_ID`}}",
-        "client_secret": "{{env `AZURE_CLIENT_SECRET`}}",
-        "subscription_id": "{{env `AZURE_SUBSCRIPTION_ID`}}",
-        "tenant_id": "{{env `AZURE_TENANT_ID`}}",
+        "client_id": "{{env `ARM_CLIENT_ID`}}",
+        "client_secret": "{{env `ARM_CLIENT_SECRET`}}",
+        "subscription_id": "{{env `ARM_SUBSCRIPTION_ID`}}",
+        "tenant_id": "{{env `ARM_TENANT_ID`}}",
         "resource_group_name": "{{env `PACKER_IMAGE_RESOURCE_GROUP`}}",
-        "location": "{{env `PACKER_IMAGE_LOCATION`}}"
+        "location": "{{env `PACKER_IMAGE_LOCATION`}}",
+        "pipeline_download_url": "{{env `PACKER_PIPELINE_DOWNLOAD_URL`}}"
     },
     "sensitive-variables": ["client_secret"],
     "builders": [
@@ -31,7 +32,8 @@
     "provisioners": [
         {
             "type": "ansible",
-            "playbook_file": "../ansible/pipeline.playbook.yml"
+            "playbook_file": "../ansible/pipeline.playbook.yml",
+            "extra_arguments": ["--extra-vars", "pipeline_download_url={{user `pipeline_download_url`}}"]
         },
         {
             "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",

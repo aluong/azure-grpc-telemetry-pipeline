@@ -1,5 +1,5 @@
 resource "azurerm_template_deployment" "databricksworkspace" {
-  name                = "${var.prefix}-databricksworkspace"
+  name                = "databricksworkspace"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
   template_body = <<DEPLOY
@@ -7,9 +7,8 @@ resource "azurerm_template_deployment" "databricksworkspace" {
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-      "prefix": {
-        "type": "string",
-        "defaultValue": "[take(tolower(uniqueString(resourceGroup().id)), 12)]"
+      "workspaceName": {
+        "type": "string"
       },
       "vnetId": {
         "type": "string"
@@ -22,14 +21,13 @@ resource "azurerm_template_deployment" "databricksworkspace" {
       }
     },
     "variables": {
-      "databricksWorkspace": "[parameters('prefix')]",
-      "managedResourceGroupId": "[concat(subscription().id, '/resourceGroups/databricks-rg-', variables('databricksWorkspace'))]"
+      "managedResourceGroupId": "[concat(subscription().id, '/resourceGroups/databricks-rg-', parameters('workspaceName'))]"
     },
     "resources": [
       {
         "apiVersion": "2018-04-01",
         "type": "Microsoft.Databricks/workspaces",
-        "name": "[variables('databricksWorkspace')]",
+        "name": "[parameters('workspaceName')]",
         "location": "[resourceGroup().location]",
         "sku": {
           "name": "Standard"
@@ -56,10 +54,10 @@ DEPLOY
 
   # these key-value pairs are passed into the ARM Template's `parameters` block
   parameters = {
-    "vnetId" = "${var.vnetId}"
-    "databricksPrivateSubnetName" = "${var.databricksPrivateSubnetName}"
-    "databricksPublicSubnetName" = "${var.databricksPublicSubnetName}"
-    "prefix" = "${var.prefix}"
+    "workspaceName" = "${local.baseName}"
+    "vnetId" = "${var.databricks_vnet_id}"
+    "databricksPrivateSubnetName" = "${var.databricks_private_subnet_name}"
+    "databricksPublicSubnetName" = "${var.databricks_public_subnet_name}"
   }
 
   deployment_mode = "Incremental"

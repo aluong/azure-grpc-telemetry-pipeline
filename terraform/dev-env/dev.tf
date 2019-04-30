@@ -1,7 +1,3 @@
-provider "azurerm" {
-  version = "~>1.24"
-}
-
 data "azurerm_client_config" "current" {}
 
 locals {

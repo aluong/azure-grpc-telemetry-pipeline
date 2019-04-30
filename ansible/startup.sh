@@ -7,9 +7,9 @@ SECRET_ID=''
 
 show_usage() {
   echo "Usage: startup.sh --config <config_path>"
-  echo "Config should be in the following format:"
-BROKERS=myeventhubnamespace.servicebus.windows.net:9093
-SECRET_ID=https://mykeyvault.vault.azure.net/secrets/mysecret/myversion
+  echo "Config should be in the following format, then base64 encoded:\n"
+  echo "BROKERS=myeventhubnamespace.servicebus.windows.net:9093"
+  echo "SECRET_ID=https://mykeyvault.vault.azure.net/secrets/mysecret/myversion"
 }
 
 parse_arguments() {
@@ -46,9 +46,10 @@ validate_arguments() {
     exit 1
   fi
 
-  source $CONFIG_PATH
+  CONFIG=$(cat $CONFIG_PATH | base64 -d)
+  eval $CONFIG
 
-  if [[ -z $BROKERS | -z $SECRET_ID ]]; then
+  if [[ -z $BROKERS || -z $SECRET_ID ]]; then
     show_usage
     exit 1
   fi

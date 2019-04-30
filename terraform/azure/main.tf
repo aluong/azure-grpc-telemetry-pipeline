@@ -1,3 +1,10 @@
+terraform {
+    backend "azurerm" {
+        container_name = "terraform"
+        key = "azure.terraform.tfstate"
+    }
+}
+
 provider "azurerm" {
   version = "~>1.24"
 }

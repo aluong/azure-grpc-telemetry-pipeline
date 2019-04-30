@@ -4,3 +4,7 @@ terraform {
         key = "dev-env.terraform.tfstate"
     }
 }
+
+provider "azurerm" {
+  version = "~>1.24"
+}

@@ -1,9 +1,48 @@
 locals {
-  eventHubNamespace = "eh-${var.prefix}"
+  event_hub_namespace = "eh-${local.baseName}"
 }
 
-resource "azurerm_template_deployment" "eventhub" {
-  name                = "${var.prefix}-eventhub"
+resource "azurerm_eventhub_namespace" "kafka" {
+  name = "${local.event_hub_namespace}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  location = "${azurerm_resource_group.rg.location}"
+  sku = "Standard"
+  capacity = 1
+  kafka_enabled = true
+}
+
+resource "azurerm_eventhub" "telemetry" {
+  name = "telemetry"
+  namespace_name = "${azurerm_eventhub_namespace.kafka.name}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  message_retention = "${var.message_retention_in_days}"
+  partition_count = "${var.partition_count}"
+
+  capture_description {
+    enabled = true
+    skip_empty_archives = true
+    encoding = "Avro"
+    interval_in_seconds = 60
+    size_limit_in_bytes = 10485760
+    destination {
+      name = "EventHubArchive.AzureBlockBlob"
+      storage_account_id = "${azurerm_storage_account.capture.id}"
+      blob_container_name = "telemetry"
+      archive_name_format = "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}"
+    }
+  }
+}
+
+resource "azurerm_eventhub_consumer_group" "databricks" {
+  name                = "databricks"
+  namespace_name      = "${azurerm_eventhub_namespace.kafka.name}"
+  eventhub_name       = "${azurerm_eventhub.telemetry.name}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+}
+
+resource "azurerm_template_deployment" "eventhub_vnet_rules" {
+  depends_on          = ["azurerm_eventhub_namespace.kafka"]
+  name                = "eventhub_vnet_rules"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
   template_body = <<DEPLOY
@@ -16,88 +55,12 @@ resource "azurerm_template_deployment" "eventhub" {
       },
       "subnetIds": {
         "type": "array",
-        "defaultValue": ${var.subnetIds}
-      },
-      "messageRetentionInDays": {
-        "type": "string",
-        "defaultValue": "1"
-      },
-      "partitionCount": {
-        "type": "string",
-        "defaultValue": "4"
-      },
-      "captureStorageAccountId": {
-        "type": "string"
-      },
-      "captureStorageContainer": {
-        "type": "string",
-        "defaultValue": "telemetry"
+        "defaultValue": ${var.event_hub_subnet_ids}
       }
     },
-    "variables": {
-      "ehName": "telemetry",
-      "consumerGroups": [
-        "databricks"
-      ]
-    },
+    "variables": {},
     "resources": [
       {
-        "apiVersion": "2017-04-01",
-        "type": "Microsoft.EventHub/namespaces",
-        "name": "[parameters('ehNamespace')]",
-        "location": "[resourceGroup().location]",
-        "sku": {
-          "name": "Standard",
-          "tier": "Standard"
-        },
-        "properties": {
-          "kafkaEnabled": true
-        }
-      },
-      {
-        "dependsOn": [
-          "[resourceId('Microsoft.EventHub/namespaces', parameters('ehNamespace'))]"
-        ],
-        "apiVersion": "2017-04-01",
-        "type": "Microsoft.EventHub/namespaces/eventhubs",
-        "name": "[concat(parameters('ehNamespace'), '/', variables('ehName'))]",
-        "properties": {
-          "messageRetentionInDays": "[parameters('messageRetentionInDays')]",
-          "partitionCount": "[parameters('partitionCount')]",
-          "captureDescription": {
-          "enabled": true,
-          "skipEmptyArchives": true,
-          "encoding": "Avro",
-          "intervalInSeconds": 60,
-          "sizeLimitInBytes": 10485760,
-          "destination": {
-            "name": "EventHubArchive.AzureBlockBlob",
-            "properties": {
-              "storageAccountResourceId": "[parameters('captureStorageAccountId')]",
-              "blobContainer": "[parameters('captureStorageContainer')]",
-              "archiveNameFormat": "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}"
-            }
-          }
-        }
-        }
-      },
-      {
-        "dependsOn": [
-          "[resourceId('Microsoft.EventHub/namespaces/eventHubs', parameters('ehNamespace'), variables('ehName'))]"
-        ],
-        "copy": {
-          "name": "cgCopy",
-          "count": "[length(variables('consumerGroups'))]"
-        },
-        "apiVersion": "2017-04-01",
-        "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
-        "name": "[concat(parameters('ehNamespace'), '/', variables('ehName'), '/', variables('consumerGroups')[copyIndex()])]",
-        "properties": {}
-      },
-      {
-        "dependsOn": [
-          "[resourceId('Microsoft.EventHub/namespaces', parameters('ehNamespace'))]"
-        ],
         "copy": {
           "name": "networkRuleCopy",
           "count": "[length(parameters('subnetIds'))]"
@@ -117,43 +80,38 @@ DEPLOY
 
   # these key-value pairs are passed into the ARM Template's `parameters` block
   parameters = {
-    "ehNamespace" = "${local.eventHubNamespace}",
-    "messageRetentionInDays" = "${var.messageRetentionInDays}",
-    "partitionCount" = "${var.partitionCount}",
-    "captureStorageAccountId" = "${azurerm_storage_account.capture.id}"
+    "ehNamespace" = "${local.event_hub_namespace}"
   }
 
   deployment_mode = "Incremental"
 }
 
-resource "azurerm_eventhub_namespace_authorization_rule" "writer-pipeline" {
+resource "azurerm_eventhub_namespace_authorization_rule" "writer_pipeline" {
   name = "pipeline"
   resource_group_name = "${azurerm_resource_group.rg.name}"
-  namespace_name = "${local.eventHubNamespace}"
+  namespace_name = "${azurerm_eventhub_namespace.kafka.name}"
   listen = false
   send = true
   manage = false
-  depends_on = ["azurerm_template_deployment.eventhub"]
 }
 
-resource "azurerm_eventhub_namespace_authorization_rule" "reader-databricks" {
+resource "azurerm_eventhub_namespace_authorization_rule" "reader_databricks" {
   name = "databricks"
   resource_group_name = "${azurerm_resource_group.rg.name}"
-  namespace_name = "${local.eventHubNamespace}"
+  namespace_name = "${azurerm_eventhub_namespace.kafka.name}"
   listen = true
   send = false
   manage = false
-  depends_on = ["azurerm_template_deployment.eventhub"]
 }
 
-resource "azurerm_key_vault_secret" "writer-pipeline" {
+resource "azurerm_key_vault_secret" "writer_pipeline" {
   name     = "eh-pipeline"
-  value    = "${azurerm_eventhub_namespace_authorization_rule.writer-pipeline.primary_connection_string}"
-  key_vault_id = "${var.keyVaultId}"
+  value    = "${azurerm_eventhub_namespace_authorization_rule.writer_pipeline.primary_connection_string}"
+  key_vault_id = "${var.key_vault_id}"
 }
 
-resource "azurerm_key_vault_secret" "reader-databricks" {
+resource "azurerm_key_vault_secret" "reader_databricks" {
   name     = "eh-databricks"
-  value    = "${azurerm_eventhub_namespace_authorization_rule.reader-databricks.primary_connection_string}"
-  key_vault_id = "${var.keyVaultId}"
+  value    = "${azurerm_eventhub_namespace_authorization_rule.reader_databricks.primary_connection_string}"
+  key_vault_id = "${var.key_vault_id}"
 }

@@ -3,7 +3,7 @@ Description=Systemd service to run pipeline.
 
 [Service]
 Type=simple
-ExecStart=/bin/bash /etc/pipeline/startup.sh /var/lib/cloud/instance/user-data.txt
+ExecStart=/bin/bash /etc/pipeline/startup.sh --config /var/lib/waagent/CustomData
 
 [Install]
 WantedBy=multi-user.target

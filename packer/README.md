@@ -11,10 +11,11 @@
 ```
 export PACKER_IMAGE_RESOURCE_GROUP=packer-resourcegroup
 export PACKER_IMAGE_LOCATION=westus2
-export AZURE_CLIENT_ID=<<ClientId>>
-export AZURE_CLIENT_SECRET=<<ClientSecret>>
-export AZURE_SUBSCRIPTION_ID=<<SubScriptionId>>
-export AZURE_TENANT_ID=<<TenantId>>
+export PACKER_PIPELINE_DOWNLOAD_URL=https://github.com/cisco-ie/pipeline-gnmi/raw/master/bin/pipeline
+export ARM_CLIENT_ID=<<ClientId>>
+export ARM_CLIENT_SECRET=<<ClientSecret>>
+export ARM_SUBSCRIPTION_ID=<<SubScriptionId>>
+export ARM_TENANT_ID=<<TenantId>>
 ```
 
 # Create resource group to store custom images

@@ -1,16 +1,16 @@
 locals {
-  virtual_machine_name      = "${var.prefix}-vm"
+  virtual_machine_name      = "vm-${local.baseName}"
   virtual_machine_user_name = "azureuser"
 }
 
 resource "azurerm_network_interface" "pipeline" {
-  name                = "${var.prefix}-nic"
+  name                = "nic-${local.baseName}"
   location            = "${azurerm_resource_group.rg.location}"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
   ip_configuration {
-    name                          = "testconfiguration1"
-    subnet_id                     = "${data.azurerm_subnet.sandbox.id}"
+    name                          = "config1"
+    subnet_id                     = "${var.infra_sandbox_subnet_id}"
     private_ip_address_allocation = "Dynamic"
   }
 }
@@ -27,11 +27,11 @@ resource "azurerm_virtual_machine" "pipeline" {
   delete_os_disk_on_termination = true
 
   storage_image_reference {
-    id = "${data.azurerm_image.custom.id}"
+    id = "${var.custom_image_id}"
   }
 
   storage_os_disk {
-    name              = "osdisk"
+    name              = "osdisk-${local.baseName}"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
@@ -42,8 +42,8 @@ resource "azurerm_virtual_machine" "pipeline" {
     admin_username = "${local.virtual_machine_user_name}"
     admin_password = "${uuid()}"
     custom_data = <<-EOF
-BROKERS=${local.eventHubNamespace}.servicebus.windows.net:9093
-SECRET_ID=${azurerm_key_vault_secret.writer-pipeline.id}
+BROKERS=${local.event_hub_namespace}.servicebus.windows.net:9093
+SECRET_ID=${azurerm_key_vault_secret.writer_pipeline.id}
   EOF
   }
 
