@@ -63,8 +63,8 @@ start() {
 
     export TLS_SERVERNAME=$HOSTNAME
 
-    export PIPELINE_mykafka_saslPassword=`az keyvault secret show --id $SECRET_ID --query value`
-    export PIPELINE_mykafka_brokers=$BROKERS
+    export PIPELINE_kafkaProducer_saslPassword=`az keyvault secret show --id $SECRET_ID --query value --output tsv`
+    export PIPELINE_kafkaProducer_brokers=$BROKERS
 
     touch /etc/pipeline/pipeline.log
     /etc/pipeline/pipeline -log=/etc/pipeline/pipeline.log -config=/etc/pipeline/pipeline.conf

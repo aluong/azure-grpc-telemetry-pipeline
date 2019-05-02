@@ -50,6 +50,14 @@
       src: ./pipeline.service
       dest: /lib/systemd/system/pipeline.service
 
+  - name: Enable HTTPS service
+    firewalld:
+      service: https
+      permanent: yes
+      state: enabled
+      zone: public
+      immediate: yes
+
   - name: Start pipeline service
     systemd:
       name: pipeline
