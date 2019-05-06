@@ -3,6 +3,10 @@ Description=Systemd service to run pipeline.
 
 [Service]
 Type=simple
+StartLimitInterval=500
+StartLimitBurst=5
+RestartSec=60
+Restart=always
 ExecStart=/bin/bash /etc/pipeline/startup.sh --config /var/lib/waagent/CustomData
 
 [Install]
