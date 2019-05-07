@@ -61,7 +61,7 @@ start() {
     HOSTNAME=`hostname`
     openssl req -newkey rsa:4096 -nodes -keyout /etc/pipeline/pipeline_vm_key.pem -x509 -out /etc/pipeline/pipeline_vm_cert.pem  -subj "/CN=${HOSTNAME}" 
 
-    export PIPELINE_kafkaProducer_tls_servername=$HOSTNAME
+    export PIPELINE_gRPCDialout_tls_servername=$HOSTNAME
 
     export PIPELINE_kafkaProducer_saslPassword=`az keyvault secret show --id $SECRET_ID --query value --output tsv`
     export PIPELINE_kafkaProducer_brokers=$BROKERS
