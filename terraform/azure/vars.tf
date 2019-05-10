@@ -1,5 +1,6 @@
 locals {
   baseName = "${substr(sha256(azurerm_resource_group.rg.id), 0, 12)}"
+  virtual_machine_user_name = "azureuser"
 }
 
 # Common properties
@@ -17,22 +18,32 @@ variable "infra_sandbox_subnet_id" {
   type = "string"
 }
 
-# VM 
+# Pipeline VM 
 
-variable "custom_image_id" {
-  description = "Custom VM image resourceId"
+variable "pipeline_custom_image_id" {
+  description = "Pipeline custom VM image resourceId"
   type = "string"
 }
 
-variable "vm_size" {
-  description = "Size of the vm"
-  type = "string"
-  default = "Standard_D2_V2"
-}
-
-variable "user_identities" {
+variable "pipeline_user_identities" {
   description = "User identities assigned to the virtual machine"
   type = "list"
+}
+
+# Visualization VM
+
+variable "visualization_custom_image_id" {
+  description = "Visualization custom VM image resourceId"
+  type = "string"
+}
+
+
+# General VM settings
+
+variable "vm_size" {
+  description = "Size of VMs"
+  type = "string"
+  default = "Standard_D2_V2"
 }
 
 

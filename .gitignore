@@ -36,6 +36,7 @@ override.tf.json
 packer.log
 
 # Python files
+.venv
 *.pyc
 __pycache__/
 

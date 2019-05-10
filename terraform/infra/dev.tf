@@ -26,6 +26,12 @@ resource "azurerm_key_vault" "kv" {
   sku {
     name = "standard"
   }
+
+  network_acls {
+    bypass         = "None"
+    default_action = "Deny"
+    virtual_network_subnet_ids = ["${azurerm_subnet.databricks-public.id}", "${azurerm_subnet.sandbox.id}"]
+  }
 }
 
 resource "azurerm_key_vault_access_policy" "pipeline_identity" {

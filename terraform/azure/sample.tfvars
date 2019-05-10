@@ -13,9 +13,12 @@ databricks_vnet_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/
 databricks_private_subnet_name = "databricks-private"
 databricks_public_subnet_name = "databricks-public"
 
-# virtual machine
-custom_image_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.Compute/images/<IMAGE_NAME>"
-user_identities = ["/subscriptions/<SUBSCRIPTION_ID>/resourcegroups/<RG_NAME>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<USER_ASSIGNED_IDENTITY>"]
+# pipeline virtual machine
+pipeline_custom_image_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.Compute/images/<IMAGE_NAME>"
+pipeline_user_identities = ["/subscriptions/<SUBSCRIPTION_ID>/resourcegroups/<RG_NAME>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<USER_ASSIGNED_IDENTITY>"]
+
+# visualization virtual machine
+visualization_custom_image_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.Compute/images/<IMAGE_NAME>"
 
 # keyvault
 key_vault_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.KeyVault/vaults/<KEYVAULT_NAME>"

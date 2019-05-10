@@ -18,7 +18,7 @@ From terraform/azure folder:
 The sample assumes you'll have your own network configuration and will deploy into your existing VNETs/subnets. To help with dev/test, we've provided a Terraform configuration that deploys everything needed to get up and running quickly.
 
 ```shell
-cd terraform/dev-env
+cd terraform/infra
 terraform init
 terraform apply -var 'infra_resource_group_name=pipeline-infra'
 ```

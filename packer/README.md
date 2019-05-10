@@ -23,9 +23,9 @@ export ARM_TENANT_ID=<<TenantId>>
 az group create -n $PACKER_IMAGE_RESOURCE_GROUP -l $PACKER_IMAGE_LOCATION
 ```
 
-# Build the custom image
+# Build the custom image for pipeline
 ```
-packer build vm.json | tee packer.log
+packer build pipeline.json | tee packer.log
 CUSTOM_IMAGE_NAME=`cat packer.log | tee packer.log | grep ManagedImageName | sed -n -e 's/^ManagedImageName: //p'`
 echo "Created Custom Image: ${CUSTOM_IMAGE_NAME}"
 ```

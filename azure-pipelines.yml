@@ -1,6 +1,9 @@
 pool:
   vmImage: ubuntu-16.04
 
+trigger:
+- master
+
 variables:
   azureSubscription: network-telemetry
   infraResourceGroup: network-telemetry-infra
@@ -8,6 +11,8 @@ variables:
   imageResourceGroup: network-telemetry-images
   location: westus2
   pipelineDownloadUrl: https://nobun.blob.core.windows.net/pipeline/pipeline?sp=r&st=2019-04-23T17:39:32Z&se=2020-01-01T08:00:00Z&spr=https&sv=2018-03-28&sig=JwlKMzAxu85iLrCTcMoA5JN0gAFOCuWUFc4LWn%2FDArs%3D&sr=b
+  influxDownloadUrl: https://dl.influxdata.com/influxdb/releases/influxdb-1.7.6.x86_64.rpm
+  grafanaDownloadUrl: https://dl.grafana.com/oss/release/grafana-6.1.6-1.x86_64.rpm
   # Uncomment the following variables here, or set them in the Azure Pipelines UX
   # tfBackendStorageAccount: mystorage
   # tfBackendResourceGroup: terraform-backend
@@ -27,7 +32,7 @@ steps:
   displayName: Update Ansible
 
 - task: AzureCLI@1
-  displayName: Define resources needed for deployment
+  displayName: Create resources needed for deployment
   inputs:
     azureSubscription: $(azureSubscription)
     scriptLocation: inlineScript
@@ -39,7 +44,7 @@ steps:
       az storage container create -n terraform --account-name $(tfBackendStorageAccount)
 
 - task: AzureCLI@1
-  displayName: Set env vars for Terraform
+  displayName: Set variables
   inputs:
     azureSubscription: $(azureSubscription)
     scriptLocation: inlineScript
@@ -57,17 +62,32 @@ steps:
 
 - bash: |
     set -euo pipefail
-    packer build vm.json | tee packer.log
-    cp packer.log $(Build.ArtifactStagingDirectory)
-    CUSTOM_IMAGE_NAME=`grep ManagedImageName packer.log | sed -n -e 's/^ManagedImageName: //p'`
-    CUSTOM_IMAGE_ID="/subscriptions/$(ARM_SUBSCRIPTION_ID)/resourceGroups/$(imageResourceGroup)/providers/Microsoft.Compute/images/$CUSTOM_IMAGE_NAME"
-    echo "##vso[task.setvariable variable=CUSTOM_IMAGE_ID]$CUSTOM_IMAGE_ID"
-  displayName: Create custom image via Packer
+    packer build pipeline.json | tee packer_pipeline.log
+    cp packer_pipeline.log $(Build.ArtifactStagingDirectory)
+    PIPELINE_CUSTOM_IMAGE_NAME=`grep ManagedImageName packer_pipeline.log | sed -n -e 's/^ManagedImageName: //p'`
+    PIPELINE_CUSTOM_IMAGE_ID="/subscriptions/$(ARM_SUBSCRIPTION_ID)/resourceGroups/$(imageResourceGroup)/providers/Microsoft.Compute/images/$PIPELINE_CUSTOM_IMAGE_NAME"
+    echo "##vso[task.setvariable variable=PIPELINE_CUSTOM_IMAGE_ID]$PIPELINE_CUSTOM_IMAGE_ID"
+  displayName: 'Packer: custom image for pipeline'
   workingDirectory: packer
   env:
     PACKER_IMAGE_RESOURCE_GROUP: $(imageResourceGroup)
     PACKER_IMAGE_LOCATION: $(location)
     PACKER_PIPELINE_DOWNLOAD_URL: $(pipelineDownloadUrl)
+
+- bash: |
+    set -euo pipefail
+    packer build visualization.json | tee packer_visualization.log
+    cp packer_visualization.log $(Build.ArtifactStagingDirectory)
+    VISUALIZATION_CUSTOM_IMAGE_NAME=`grep ManagedImageName packer_visualization.log | sed -n -e 's/^ManagedImageName: //p'`
+    VISUALIZATION_CUSTOM_IMAGE_ID="/subscriptions/$(ARM_SUBSCRIPTION_ID)/resourceGroups/$(imageResourceGroup)/providers/Microsoft.Compute/images/$VISUALIZATION_CUSTOM_IMAGE_NAME"
+    echo "##vso[task.setvariable variable=VISUALIZATION_CUSTOM_IMAGE_ID]$VISUALIZATION_CUSTOM_IMAGE_ID"
+  displayName: 'Packer: custom image for visualization'
+  workingDirectory: packer
+  env:
+    PACKER_IMAGE_RESOURCE_GROUP: $(imageResourceGroup)
+    PACKER_IMAGE_LOCATION: $(location)
+    PACKER_INFLUX_DOWNLOAD_URL: $(influxDownloadUrl)
+    PACKER_GRAFANA_DOWNLOAD_URL: $(grafanaDownloadUrl)
 
 - bash: |
     set -euo pipefail
@@ -92,8 +112,8 @@ steps:
 
     DATABRICKS_PUBLIC_SUBNET_ID=`terraform output databricks-public_subnet_id`
     echo "##vso[task.setvariable variable=SUBNET_IDS]\"[\\\"$SANDBOX_SUBNET_ID\\\", \\\"$DATABRICKS_PUBLIC_SUBNET_ID\\\"]\""
-  displayName: Deploy dev infra
-  workingDirectory: terraform/dev-env
+  displayName: 'Terraform: deploy infra'
+  workingDirectory: terraform/infra
 
 - bash: |
     set -euo pipefail
@@ -109,11 +129,12 @@ steps:
       -var 'databricks_private_subnet_name=databricks-private' \
       -var 'databricks_public_subnet_name=databricks-public' \
       -var 'custom_image_resource_group_name=$(imageResourceGroup)' \
-      -var 'custom_image_id=$(CUSTOM_IMAGE_ID)' \
-      -var 'user_identities=$(USER_MANAGED_IDENTITIES)' \
+      -var 'pipeline_custom_image_id=$(PIPELINE_CUSTOM_IMAGE_ID)' \
+      -var 'pipeline_user_identities=$(USER_MANAGED_IDENTITIES)' \
+      -var 'visualization_custom_image_id=$(VISUALIZATION_CUSTOM_IMAGE_ID)' \
       -var 'key_vault_id=$(KEYVAULT_ID)' \
       -auto-approve
-  displayName: Deploy solution
+  displayName: 'Terraform: deploy solution'
   workingDirectory: terraform/azure
 
 - task: PublishBuildArtifacts@1
