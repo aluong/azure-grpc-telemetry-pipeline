@@ -13,8 +13,15 @@ variable "location" {
   description = "The location/region where the resources are created."
 }
 
+# Infra
+
 variable "infra_sandbox_subnet_id" {
   description = "Name of the subnet to be used for the sandbox"
+  type = "string"
+}
+
+variable "infra_diagnostic_log_storage_account_id" {
+  description = "Resource id for the storage account storing Azure Monitor diagnostic logs"
   type = "string"
 }
 

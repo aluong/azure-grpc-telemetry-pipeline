@@ -115,3 +115,45 @@ resource "azurerm_key_vault_secret" "reader_databricks" {
   value    = "${azurerm_eventhub_namespace_authorization_rule.reader_databricks.primary_connection_string}"
   key_vault_id = "${var.key_vault_id}"
 }
+
+resource "azurerm_monitor_diagnostic_setting" "diagnostic_logs" {
+  name               = "diagnostic-logs-pipeline"
+  target_resource_id = "${azurerm_eventhub_namespace.kafka.id}"
+  storage_account_id = "${var.infra_diagnostic_log_storage_account_id}"
+
+  log {
+    category = "ArchiveLogs"
+
+    retention_policy {
+      enabled = true
+      days = 7
+    }
+  }
+
+  log {
+    category = "OperationalLogs"
+
+    retention_policy {
+      enabled = true
+      days = 7
+    }
+  }
+
+  log {
+    category = "AutoScaleLogs"
+
+    retention_policy {
+      enabled = true
+      days = 7
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+
+    retention_policy {
+      enabled = true
+      days = 7
+    }
+  }
+}

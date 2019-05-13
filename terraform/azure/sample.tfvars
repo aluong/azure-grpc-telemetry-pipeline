@@ -1,9 +1,10 @@
 # common
-resource_group_name = "azure-pipeline-rg"
+resource_group_name = "network-telemetry-pipeline"
 location = "westus2"
 
-# infra network
+# infra
 infra_sandbox_subnet_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.Network/virtualNetworks/<VNET_NAME>/sandbox"
+infra_diagnostic_log_storage_account_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.Storage/storageAccounts/<STORAGE_ACCOUNT_NAME>"
 
 # event hubs
 event_hub_subnet_ids = "[\"/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.Network/virtualNetworks/VNET_NAME/subnets/<SUBNET_NAME>\",\"/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.Network/virtualNetworks/VNET_NAME/subnets/<SUBNET_NAME>\"]"

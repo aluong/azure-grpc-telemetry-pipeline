@@ -17,10 +17,26 @@ From terraform/azure folder:
 
 The sample assumes you'll have your own network configuration and will deploy into your existing VNETs/subnets. To help with dev/test, we've provided a Terraform configuration that deploys everything needed to get up and running quickly.
 
+Set the following environment variables to authenticate with the Terraform Azure Resource Manager
+```shell
+export ARM_CLIENT_ID=<ClientId>
+export ARM_CLIENT_SECRET=<ClientSecret>
+export ARM_SUBSCRIPTION_ID=<SubScriptionId>
+export ARM_TENANT_ID=<TenantId>
+```
+
+Deploy the base infrastructure
 ```shell
 cd terraform/infra
 terraform init
-terraform apply -var 'infra_resource_group_name=pipeline-infra'
+terraform apply -var 'infra_resource_group_name=network-telemetry-infra'
+```
+
+Deploy the azure pipeline
+```shell
+cd terraform/azure
+terraform init
+terraform apply --var-file=sample.tfvars
 ```
 
 ### Accessing Azure VM 
@@ -39,6 +55,13 @@ az vm user update \
   --name <<VM_NAME>> \
   --username azureuser \
   --ssh-key-value ~/.ssh/id_rsa.pub
+```
+
+### Diagnostic logs 
+When we turn on Diagnostic logs for a service they will be plumbed into a storage account. Logs are stored in files per hour and follow the blob naming convention below. Additional details can be found on the [archive-diagnostic-logs documentation](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/archive-diagnostic-logs#schema-of-diagnostic-logs-in-the-storage-account) page.
+
+```
+insights-logs-{log category name}/resourceId=/SUBSCRIPTIONS/{subscription ID}/RESOURCEGROUPS/{resource group name}/PROVIDERS/{resource provider name}/{resource type}/{resource name}/y={four-digit numeric year}/m={two-digit numeric month}/d={two-digit numeric day}/h={two-digit 24-hour clock hour}/m=00/PT1H.json
 ```
 
 # Contributing

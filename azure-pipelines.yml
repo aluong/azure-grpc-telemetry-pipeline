@@ -68,6 +68,7 @@ steps:
     PIPELINE_CUSTOM_IMAGE_ID="/subscriptions/$(ARM_SUBSCRIPTION_ID)/resourceGroups/$(imageResourceGroup)/providers/Microsoft.Compute/images/$PIPELINE_CUSTOM_IMAGE_NAME"
     echo "##vso[task.setvariable variable=PIPELINE_CUSTOM_IMAGE_ID]$PIPELINE_CUSTOM_IMAGE_ID"
   displayName: 'Packer: custom image for pipeline'
+  condition: and(succeeded(), not(variables['PIPELINE_CUSTOM_IMAGE_ID']))
   workingDirectory: packer
   env:
     PACKER_IMAGE_RESOURCE_GROUP: $(imageResourceGroup)
@@ -82,6 +83,7 @@ steps:
     VISUALIZATION_CUSTOM_IMAGE_ID="/subscriptions/$(ARM_SUBSCRIPTION_ID)/resourceGroups/$(imageResourceGroup)/providers/Microsoft.Compute/images/$VISUALIZATION_CUSTOM_IMAGE_NAME"
     echo "##vso[task.setvariable variable=VISUALIZATION_CUSTOM_IMAGE_ID]$VISUALIZATION_CUSTOM_IMAGE_ID"
   displayName: 'Packer: custom image for visualization'
+  condition: and(succeeded(), not(variables['VISUALIZATION_CUSTOM_IMAGE_ID']))
   workingDirectory: packer
   env:
     PACKER_IMAGE_RESOURCE_GROUP: $(imageResourceGroup)
@@ -112,6 +114,9 @@ steps:
 
     DATABRICKS_PUBLIC_SUBNET_ID=`terraform output databricks-public_subnet_id`
     echo "##vso[task.setvariable variable=SUBNET_IDS]\"[\\\"$SANDBOX_SUBNET_ID\\\", \\\"$DATABRICKS_PUBLIC_SUBNET_ID\\\"]\""
+
+    STORAGE_DIAG_LOGS_ID=`terraform output storage_diagnostics_logs_id`
+    echo "##vso[task.setvariable variable=STORAGE_DIAG_LOGS_ID]$STORAGE_DIAG_LOGS_ID"
   displayName: 'Terraform: deploy infra'
   workingDirectory: terraform/infra
 
@@ -123,6 +128,7 @@ steps:
     terraform apply \
       -var 'resource_group_name=$(pipelineResourceGroup)' \
       -var 'location=$(location)' \
+      -var 'infra_diagnostic_log_storage_account_id=$(STORAGE_DIAG_LOGS_ID)' \
       -var 'infra_sandbox_subnet_id=$(SANDBOX_SUBNET_ID)' \
       -var 'event_hub_subnet_ids=$(SUBNET_IDS)' \
       -var 'databricks_vnet_id=$(VNET_ID)' \

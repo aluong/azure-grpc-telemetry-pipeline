@@ -1,9 +1,10 @@
 data "azurerm_client_config" "current" {}
 
 locals {
-  baseName = "${substr(sha256(azurerm_resource_group.infra_rg.id), 0, 12)}"
-  kvName   = "kv${local.baseName}"
-  vnetName = "vnet${local.baseName}"
+  base_name = "${substr(sha256(azurerm_resource_group.infra_rg.id), 0, 12)}"
+  kv_name   = "kv${local.base_name}"
+  vnet_name = "vnet${local.base_name}"
+  storge_diag_logs_name   = "sa${local.base_name}"
 }
 
 resource "azurerm_resource_group" "infra_rg" {
@@ -18,7 +19,7 @@ resource "azurerm_user_assigned_identity" "pipeline_identity" {
 }
 
 resource "azurerm_key_vault" "kv" {
-  name                = "${local.kvName}"
+  name                = "${local.kv_name}"
   location            = "${azurerm_resource_group.infra_rg.location}"
   resource_group_name = "${azurerm_resource_group.infra_rg.name}"
   tenant_id           = "${data.azurerm_client_config.current.tenant_id}"
@@ -26,13 +27,22 @@ resource "azurerm_key_vault" "kv" {
   sku {
     name = "standard"
   }
+}
 
-  network_acls {
-    bypass         = "None"
-    default_action = "Deny"
-    virtual_network_subnet_ids = ["${azurerm_subnet.databricks-public.id}", "${azurerm_subnet.sandbox.id}"]
+resource "azurerm_storage_account" "diagnostic_logs" {
+  name        = "${local.storge_diag_logs_name}"
+  location            = "${azurerm_resource_group.infra_rg.location}"
+  resource_group_name = "${azurerm_resource_group.infra_rg.name}"
+  account_tier = "Standard"
+  account_replication_type = "LRS"
+  enable_blob_encryption = true
+  enable_https_traffic_only = true
+  network_rules {
+    bypass = ["AzureServices"]
+    virtual_network_subnet_ids = ["${azurerm_subnet.sandbox.id}"]
   }
 }
+
 
 resource "azurerm_key_vault_access_policy" "pipeline_identity" {
   vault_name          = "${azurerm_key_vault.kv.name}"
@@ -205,7 +215,7 @@ resource "azurerm_network_security_group" "sandboxNSG" {
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = "${local.vnetName}"
+  name                = "${local.vnet_name}"
   location            = "${azurerm_resource_group.infra_rg.location}"
   resource_group_name = "${azurerm_resource_group.infra_rg.name}"
   address_space       = ["10.0.0.0/16"]
@@ -216,7 +226,7 @@ resource "azurerm_subnet" "sandbox" {
   resource_group_name  = "${azurerm_resource_group.infra_rg.name}"
   virtual_network_name = "${azurerm_virtual_network.vnet.name}"
   address_prefix       = "10.0.1.0/24"
-  service_endpoints    = ["Microsoft.EventHub"]
+  service_endpoints    = ["Microsoft.EventHub", "Microsoft.Storage", "Microsoft.KeyVault"]
   network_security_group_id = "${azurerm_network_security_group.sandboxNSG.id}"
 }
 
@@ -243,7 +253,7 @@ resource "azurerm_subnet" "databricks-public" {
   resource_group_name  = "${azurerm_resource_group.infra_rg.name}"
   virtual_network_name = "${azurerm_virtual_network.vnet.name}"
   address_prefix       = "10.0.3.0/24"
-  service_endpoints    = ["Microsoft.EventHub", "Microsoft.Storage"]
+  service_endpoints    = ["Microsoft.EventHub", "Microsoft.Storage", "Microsoft.KeyVault"]
   network_security_group_id = "${azurerm_network_security_group.databricksNSG.id}"
 }
 
@@ -274,4 +284,8 @@ output "databricks-public_subnet_id" {
 
 output "pipeline_identity_id" {
   value = "${azurerm_user_assigned_identity.pipeline_identity.id}"
+}
+
+output "storage_diagnostics_logs_id" {
+  value = "${azurerm_storage_account.diagnostic_logs.id}"
 }

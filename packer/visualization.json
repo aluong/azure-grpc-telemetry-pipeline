@@ -34,7 +34,7 @@
         {
             "type": "ansible",
             "playbook_file": "../ansible/visualization.playbook.yml",
-            "extra_arguments": ["--extra-vars", "influx_download_url={{user `influx_download_url`}}", "grafana_download_url={{user `grafana_download_url`}}"]
+            "extra_arguments": ["--extra-vars", "influx_download_url={{user `influx_download_url`}} grafana_download_url={{user `grafana_download_url`}}"]
         },
         {
             "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
