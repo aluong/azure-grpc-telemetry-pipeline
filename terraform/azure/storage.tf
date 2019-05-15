@@ -8,6 +8,6 @@ resource "azurerm_storage_account" "capture" {
     enable_https_traffic_only = true
     network_rules {
         bypass = ["AzureServices"]
-        virtual_network_subnet_ids = ["${var.databricks_vnet_id}/subnets/${var.databricks_public_subnet_name}"]
+        virtual_network_subnet_ids = []
     }
 }

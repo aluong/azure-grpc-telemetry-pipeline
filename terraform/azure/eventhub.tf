@@ -33,8 +33,8 @@ resource "azurerm_eventhub" "telemetry" {
   }
 }
 
-resource "azurerm_eventhub_consumer_group" "databricks" {
-  name                = "databricks"
+resource "azurerm_eventhub_consumer_group" "telegraf" {
+  name                = "telegraf"
   namespace_name      = "${azurerm_eventhub_namespace.kafka.name}"
   eventhub_name       = "${azurerm_eventhub.telemetry.name}"
   resource_group_name = "${azurerm_resource_group.rg.name}"
@@ -95,8 +95,8 @@ resource "azurerm_eventhub_namespace_authorization_rule" "writer_pipeline" {
   manage = false
 }
 
-resource "azurerm_eventhub_namespace_authorization_rule" "reader_databricks" {
-  name = "databricks"
+resource "azurerm_eventhub_namespace_authorization_rule" "reader_telegraf" {
+  name = "telegraf"
   resource_group_name = "${azurerm_resource_group.rg.name}"
   namespace_name = "${azurerm_eventhub_namespace.kafka.name}"
   listen = true
@@ -110,9 +110,9 @@ resource "azurerm_key_vault_secret" "writer_pipeline" {
   key_vault_id = "${var.key_vault_id}"
 }
 
-resource "azurerm_key_vault_secret" "reader_databricks" {
-  name     = "eh-databricks"
-  value    = "${azurerm_eventhub_namespace_authorization_rule.reader_databricks.primary_connection_string}"
+resource "azurerm_key_vault_secret" "reader_telegraf" {
+  name     = "eh-telegraf"
+  value    = "${azurerm_eventhub_namespace_authorization_rule.reader_telegraf.primary_connection_string}"
   key_vault_id = "${var.key_vault_id}"
 }
 

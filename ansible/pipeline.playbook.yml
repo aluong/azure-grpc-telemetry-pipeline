@@ -40,25 +40,25 @@
       name: azure-cli
       state: present
 
-  - name: Copy startup.sh
+  - name: Copy pipeline.sh
     copy:
-      src: ./startup.sh
-      dest: /etc/pipeline/startup.sh
+      src: ./pipeline.sh
+      dest: /etc/pipeline/pipeline.sh
   
   - name: Copy pipeline.service
     copy:
       src: ./pipeline.service
       dest: /lib/systemd/system/pipeline.service
 
-  - name: Enable HTTPS service
+  - name: Enable pipeline port
     firewalld:
-      service: https
+      port: 57500/tcp
       permanent: yes
       state: enabled
       zone: public
       immediate: yes
 
-  - name: Start pipeline service
+  - name: Enable pipeline service
     systemd:
       name: pipeline
       enabled: true

@@ -1,9 +1,0 @@
-{
-  "tenant_id" : "<TENANT_ID>",
-  "subscription_id" : "<SUBSCRIPTION_ID>",
-  "client_id" : "<CLIENT_ID>",
-  "client_secret" : "<CLIENT_SECRET>",
-  "databricks_workspace_name" : "<WORKSPACE_NAME>",
-  "databricks_host_url" : "<DATABRICKS_HOST_URL>",
-  "databricks_resource_group_name" : "<DATABRICKS_RESOURCE_GROUP_NAME>"
-}

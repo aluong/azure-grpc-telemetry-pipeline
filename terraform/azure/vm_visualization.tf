@@ -40,9 +40,18 @@ resource "azurerm_virtual_machine" "visualization" {
     computer_name  = "${local.visualization_name}"
     admin_username = "${local.virtual_machine_user_name}"
     admin_password = "${uuid()}"
+    custom_data = <<-EOF
+BROKERS=${local.event_hub_namespace}.servicebus.windows.net:9093
+SECRET_ID=${azurerm_key_vault_secret.reader_telegraf.id}
+  EOF
   }
 
   os_profile_linux_config {
     disable_password_authentication = false
+  }
+
+  identity {
+    type = "UserAssigned"
+    identity_ids = "${var.visualization_user_identities}"
   }
 }

@@ -7,7 +7,7 @@ StartLimitInterval=500
 StartLimitBurst=5
 RestartSec=60
 Restart=always
-ExecStart=/bin/bash /etc/pipeline/startup.sh --config /var/lib/waagent/CustomData
+ExecStart=/bin/bash /etc/pipeline/pipeline.sh --config /var/lib/waagent/CustomData
 
 [Install]
 WantedBy=multi-user.target

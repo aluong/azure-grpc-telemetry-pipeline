@@ -33,7 +33,7 @@ variable "pipeline_custom_image_id" {
 }
 
 variable "pipeline_user_identities" {
-  description = "User identities assigned to the virtual machine"
+  description = "User assigned identities for the pipeline virtual machine"
   type = "list"
 }
 
@@ -42,6 +42,11 @@ variable "pipeline_user_identities" {
 variable "visualization_custom_image_id" {
   description = "Visualization custom VM image resourceId"
   type = "string"
+}
+
+variable "visualization_user_identities" {
+  description = "User assigned identities for the visualization virtual machine"
+  type = "list"
 }
 
 
@@ -70,23 +75,6 @@ variable "message_retention_in_days" {
   description = "The Event Hubs Standard tier allows message retention period for a maximum of seven days."
   type = "string"
   default = "7"
-}
-
-# Databricks Workspace
-
-variable "databricks_vnet_id" {
-  description = "Resource ID of the VNET that Databricks will use for deploying clusters."
-  type = "string"
-}
-
-variable "databricks_private_subnet_name" {
-  description = "Name of the subnet to be used for cluster-internal communication"
-  type = "string"
-}
-
-variable "databricks_public_subnet_name" {
-  description = "Name of the subnet to be used for communication outside the cluster"
-  type = "string"
 }
 
 # Key Vault

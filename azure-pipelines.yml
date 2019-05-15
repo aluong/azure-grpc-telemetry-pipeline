@@ -6,16 +6,20 @@ trigger:
 
 variables:
   azureSubscription: network-telemetry
-  infraResourceGroup: network-telemetry-infra
-  pipelineResourceGroup: network-telemetry-pipeline
-  imageResourceGroup: network-telemetry-images
-  location: westus2
-  pipelineDownloadUrl: https://nobun.blob.core.windows.net/pipeline/pipeline?sp=r&st=2019-04-23T17:39:32Z&se=2020-01-01T08:00:00Z&spr=https&sv=2018-03-28&sig=JwlKMzAxu85iLrCTcMoA5JN0gAFOCuWUFc4LWn%2FDArs%3D&sr=b
-  influxDownloadUrl: https://dl.influxdata.com/influxdb/releases/influxdb-1.7.6.x86_64.rpm
-  grafanaDownloadUrl: https://dl.grafana.com/oss/release/grafana-6.1.6-1.x86_64.rpm
+  infraResourceGroup: $[coalesce(variables['infraResourceGroupOverride'], 'network-telemetry-infra')]
+  pipelineResourceGroup: $[coalesce(variables['pipelineResourceGroupOverride'], 'network-telemetry-pipeline')]
+  imageResourceGroup: $[coalesce(variables['imageResourceGroupOverride'], 'network-telemetry-images')]
+  location: $[coalesce(variables['locationOverride'], 'westus2')]
+  pipelineDownloadUrl: $[coalesce(variables['pipelineDownloadUrlOverride'], 'https://nobun.blob.core.windows.net/pipeline/pipeline?sp=r&st=2019-04-23T17:39:32Z&se=2020-01-01T08:00:00Z&spr=https&sv=2018-03-28&sig=JwlKMzAxu85iLrCTcMoA5JN0gAFOCuWUFc4LWn%2FDArs%3D&sr=b')]
+  influxDownloadUrl: $[coalesce(variables['influxDownloadUrlOverride'], 'https://dl.influxdata.com/influxdb/releases/influxdb-1.7.6.x86_64.rpm')]
+  grafanaDownloadUrl: $[coalesce(variables['grafanaDownloadUrlOverride'], 'https://dl.grafana.com/oss/release/grafana-6.1.6-1.x86_64.rpm')]
+  telegrafDownloadUrl: $[coalesce(variables['telegrafDownloadUrlOverride'], 'https://dl.influxdata.com/telegraf/releases/telegraf-1.10.3-1.x86_64.rpm')]
+  eventHubRootCertDownloadUrl: $[coalesce(variables['eventHubRootCertDownloadUrlOverride'], 'https://www.digicert.com/CACerts/BaltimoreCyberTrustRoot.crt.pem')]
   # Uncomment the following variables here, or set them in the Azure Pipelines UX
   # tfBackendStorageAccount: mystorage
   # tfBackendResourceGroup: terraform-backend
+  tfBackendKeyInfra: $[coalesce(variables['tfBackendKeyInfraOverride'], 'infra.terraform.tfstate')]
+  tfBackendKeyAzure: $[coalesce(variables['tfBackendKeyAzureOverride'], 'azure.terraform.tfstate')]
 
 steps:
 
@@ -23,6 +27,7 @@ steps:
     curl -LO https://releases.hashicorp.com/packer/1.4.0/packer_1.4.0_linux_amd64.zip
     sudo unzip packer_1.4.0_linux_amd64.zip -d /usr/local/bin
   displayName: Download Packer
+  condition: and(succeeded(), or(not(variables['PIPELINE_CUSTOM_IMAGE_ID']), not(variables['VISUALIZATION_CUSTOM_IMAGE_ID'])))
 
 - bash: |
     sudo apt-get update
@@ -30,6 +35,7 @@ steps:
     sudo apt-add-repository --yes --update ppa:ansible/ansible
     sudo apt-get install ansible
   displayName: Update Ansible
+  condition: and(succeeded(), or(not(variables['PIPELINE_CUSTOM_IMAGE_ID']), not(variables['VISUALIZATION_CUSTOM_IMAGE_ID'])))
 
 - task: AzureCLI@1
   displayName: Create resources needed for deployment
@@ -90,12 +96,15 @@ steps:
     PACKER_IMAGE_LOCATION: $(location)
     PACKER_INFLUX_DOWNLOAD_URL: $(influxDownloadUrl)
     PACKER_GRAFANA_DOWNLOAD_URL: $(grafanaDownloadUrl)
+    PACKER_TELEGRAF_DOWNLOAD_URL: $(telegrafDownloadUrl)
+    PACKER_EVENT_HUB_ROOT_CERT_DOWNLOAD_URL: $(eventHubRootCertDownloadUrl)
 
 - bash: |
     set -euo pipefail
     terraform init \
       --backend-config='storage_account_name=$(tfBackendStorageAccount)' \
-      --backend-config='resource_group_name=$(tfBackendResourceGroup)'
+      --backend-config='resource_group_name=$(tfBackendResourceGroup)' \
+      --backend-config='key=$(tfBackendKeyInfra)'
     terraform apply \
       -var 'infra_resource_group_name=$(infraResourceGroup)' \
       -auto-approve
@@ -104,16 +113,17 @@ steps:
     echo "##vso[task.setvariable variable=KEYVAULT_ID]$KEYVAULT_ID"
     
     PIPELINE_IDENTITY_ID=`terraform output pipeline_identity_id`
-    echo "##vso[task.setvariable variable=USER_MANAGED_IDENTITIES][\"$PIPELINE_IDENTITY_ID\"]"
+    echo "##vso[task.setvariable variable=PIPELINE_IDENTITIES][\"$PIPELINE_IDENTITY_ID\"]"
+
+    VISUALIZATION_IDENTITY_ID=`terraform output visualization_identity_id`
+    echo "##vso[task.setvariable variable=VISUALIZATION_IDENTITIES][\"$VISUALIZATION_IDENTITY_ID\"]"
     
     VNET_ID=`terraform output vnet_id`
     echo "##vso[task.setvariable variable=VNET_ID]$VNET_ID"
 
     SANDBOX_SUBNET_ID=`terraform output sandbox_subnet_id`
     echo "##vso[task.setvariable variable=SANDBOX_SUBNET_ID]$SANDBOX_SUBNET_ID"
-
-    DATABRICKS_PUBLIC_SUBNET_ID=`terraform output databricks-public_subnet_id`
-    echo "##vso[task.setvariable variable=SUBNET_IDS]\"[\\\"$SANDBOX_SUBNET_ID\\\", \\\"$DATABRICKS_PUBLIC_SUBNET_ID\\\"]\""
+    echo "##vso[task.setvariable variable=SUBNET_IDS]\"[\\\"$SANDBOX_SUBNET_ID\\\"]\""
 
     STORAGE_DIAG_LOGS_ID=`terraform output storage_diagnostics_logs_id`
     echo "##vso[task.setvariable variable=STORAGE_DIAG_LOGS_ID]$STORAGE_DIAG_LOGS_ID"
@@ -124,20 +134,19 @@ steps:
     set -euo pipefail
     terraform init \
       --backend-config='storage_account_name=$(tfBackendStorageAccount)' \
-      --backend-config='resource_group_name=$(tfBackendResourceGroup)'
+      --backend-config='resource_group_name=$(tfBackendResourceGroup)' \
+      --backend-config='key=$(tfBackendKeyAzure)'
     terraform apply \
       -var 'resource_group_name=$(pipelineResourceGroup)' \
       -var 'location=$(location)' \
       -var 'infra_diagnostic_log_storage_account_id=$(STORAGE_DIAG_LOGS_ID)' \
       -var 'infra_sandbox_subnet_id=$(SANDBOX_SUBNET_ID)' \
       -var 'event_hub_subnet_ids=$(SUBNET_IDS)' \
-      -var 'databricks_vnet_id=$(VNET_ID)' \
-      -var 'databricks_private_subnet_name=databricks-private' \
-      -var 'databricks_public_subnet_name=databricks-public' \
       -var 'custom_image_resource_group_name=$(imageResourceGroup)' \
       -var 'pipeline_custom_image_id=$(PIPELINE_CUSTOM_IMAGE_ID)' \
-      -var 'pipeline_user_identities=$(USER_MANAGED_IDENTITIES)' \
+      -var 'pipeline_user_identities=$(PIPELINE_IDENTITIES)' \
       -var 'visualization_custom_image_id=$(VISUALIZATION_CUSTOM_IMAGE_ID)' \
+      -var 'visualization_user_identities=$(VISUALIZATION_IDENTITIES)' \
       -var 'key_vault_id=$(KEYVAULT_ID)' \
       -auto-approve
   displayName: 'Terraform: deploy solution'

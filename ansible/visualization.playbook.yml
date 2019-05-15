@@ -5,38 +5,37 @@
   vars:
     influx_download_url: https://dl.influxdata.com/influxdb/releases/influxdb-1.7.6.x86_64.rpm
     grafana_download_url: https://dl.grafana.com/oss/release/grafana-6.1.6-1.x86_64.rpm
+    telegraf_download_url: https://dl.influxdata.com/telegraf/releases/telegraf-1.10.3-1.x86_64.rpm
+    event_hub_root_cert_download_url: https://www.digicert.com/CACerts/BaltimoreCyberTrustRoot.crt.pem
 
   tasks:
-  - name: Create certs
-    shell: |
-      HOSTNAME=`hostname`
-      openssl req -newkey rsa:4096 -nodes -keyout /etc/grafana/grafana_key.pem -x509 -out /etc/grafana/grafana_cert.pem  -subj "/CN=${HOSTNAME}" 
-      openssl req -newkey rsa:4096 -nodes -keyout /etc/influxdb/influx_key.pem -x509 -out /etc/influxdb/influx_cert.pem  -subj "/CN=${HOSTNAME}" 
 
   - name: Install InfluxDB
     yum: 
       name: "{{ influx_download_url }}"
       state: present
 
+  - name: Enable InfluxDB
+    systemd:
+      name: influxdb
+      enabled: true
+      masked: false
+
   - name: Copy Influx config
     copy:
       src: ./influxdb.conf
       dest: /etc/influxdb/influxdb.conf
 
-  - name: Start InfluxDB
-    systemd:
-      name: influxdb
-      state: restarted
-      enabled: true
-      masked: false
-
-  - name: Create InfluxDB database
-    shell: influx -ssl -unsafeSsl -execute 'create database telemetry'
-
   - name: Install Grafana
     yum:
       name: "{{ grafana_download_url }}"
       state: present
+
+  - name: Enable Grafana
+    systemd:
+      name: grafana-server
+      enabled: true
+      masked: false
 
   - name: Copy Grafana config
     copy:
@@ -46,13 +45,6 @@
   - name: Allow Grafana to bind to privileged ports
     shell: setcap 'cap_net_bind_service=+ep' /usr/sbin/grafana-server
 
-  - name: Start Grafana
-    systemd:
-      name: grafana-server
-      state: restarted
-      enabled: true
-      masked: false
-
   - name: Enable HTTPS service
     firewalld:
       service: https
@@ -60,3 +52,61 @@
       state: enabled
       zone: public
       immediate: yes
+
+  - name: Install telegraf
+    yum:
+      name: "{{ telegraf_download_url }}"
+
+  - name: Enable telegraf
+    systemd:
+      name: telegraf
+      enabled: true
+      masked: false
+
+  - name: Copy telegraf config
+    copy:
+      src: telegraf.conf
+      dest: /etc/telegraf/telegraf.conf
+
+  - name: Download Baltimore CyberTrust Root cert
+    get_url:
+      url: "{{ event_hub_root_cert_download_url }}"
+      dest: /etc/telegraf/root.pem
+
+  - name: Import the Microsoft repository key.
+    rpm_key:
+      key: https://packages.microsoft.com/keys/microsoft.asc
+      state: present
+
+  - name: Create local azure-cli repository information.
+    yum_repository:
+      name: azure-cli
+      description: Microsoft Azure CLI
+      baseurl: https://packages.microsoft.com/yumrepos/azure-cli
+      gpgkey: https://packages.microsoft.com/keys/microsoft.asc
+      gpgcheck: yes
+
+  - name: Install azure cli
+    yum:
+      name: azure-cli
+      state: present
+
+  - name: Create directory /etc/visualization
+    file:
+      path: /etc/visualization
+      state: directory
+
+  - name: Copy visualization.sh
+    copy:
+      src: ./visualization.sh
+      dest: /etc/visualization/visualization.sh
+
+  - name: Copy visualization.service
+    copy:
+      src: ./visualization.service
+      dest: /lib/systemd/system/visualization.service
+
+  - name: Enable visualization service
+    systemd:
+      name: visualization
+      enabled: true

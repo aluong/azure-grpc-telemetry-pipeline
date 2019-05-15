@@ -7,7 +7,9 @@
         "resource_group_name": "{{env `PACKER_IMAGE_RESOURCE_GROUP`}}",
         "location": "{{env `PACKER_IMAGE_LOCATION`}}",
         "influx_download_url": "{{env `PACKER_INFLUX_DOWNLOAD_URL`}}",
-        "grafana_download_url": "{{env `PACKER_GRAFANA_DOWNLOAD_URL`}}"
+        "grafana_download_url": "{{env `PACKER_GRAFANA_DOWNLOAD_URL`}}",
+        "telegraf_download_url": "{{env `PACKER_TELEGRAF_DOWNLOAD_URL`}}",
+        "event_hub_root_cert_download_url": "{{env `PACKER_EVENT_HUB_ROOT_CERT_DOWNLOAD_URL`}}"
     },
     "sensitive-variables": ["client_secret"],
     "builders": [
@@ -18,7 +20,7 @@
             "client_secret": "{{user `client_secret`}}",
             "tenant_id": "{{user `tenant_id`}}",
             "managed_image_resource_group_name": "{{user `resource_group_name`}}",
-            "managed_image_name": "linuxImage-{{isotime | clean_image_name}}",
+            "managed_image_name": "visualization-{{isotime | clean_image_name}}",
             "os_type": "Linux",
             "image_publisher": "RedHat",
             "image_offer": "RHEL",
@@ -27,14 +29,15 @@
                 "task": "Image deployment"
             },
             "location": "{{user `location`}}",
-            "vm_size": "Standard_D2_v3"
+            "vm_size": "Standard_DS2_v2",
+            "async_resourcegroup_delete": true
         }
     ],
     "provisioners": [
         {
             "type": "ansible",
             "playbook_file": "../ansible/visualization.playbook.yml",
-            "extra_arguments": ["--extra-vars", "influx_download_url={{user `influx_download_url`}} grafana_download_url={{user `grafana_download_url`}}"]
+            "extra_arguments": ["--extra-vars", "influx_download_url={{user `influx_download_url`}} grafana_download_url={{user `grafana_download_url`}} telegraf_download_url={{user `telegraf_download_url`}} event_hub_root_cert_download_url={{user `event_hub_root_cert_download_url`}}"]
         },
         {
             "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
