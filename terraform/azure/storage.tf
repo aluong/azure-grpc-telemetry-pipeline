@@ -8,6 +8,5 @@ resource "azurerm_storage_account" "capture" {
     enable_https_traffic_only = true
     network_rules {
         bypass = ["AzureServices"]
-        virtual_network_subnet_ids = []
     }
 }

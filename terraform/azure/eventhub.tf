@@ -33,10 +33,18 @@ resource "azurerm_eventhub" "telemetry" {
   }
 }
 
-resource "azurerm_eventhub_consumer_group" "telegraf" {
-  name                = "telegraf"
+resource "azurerm_eventhub" "binary" {
+  name = "binary"
+  namespace_name = "${azurerm_eventhub_namespace.kafka.name}"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  message_retention = "${var.message_retention_in_days}"
+  partition_count = "${var.partition_count}"
+}
+
+resource "azurerm_eventhub_consumer_group" "metrics" {
+  name                = "metrics"
   namespace_name      = "${azurerm_eventhub_namespace.kafka.name}"
-  eventhub_name       = "${azurerm_eventhub.telemetry.name}"
+  eventhub_name       = "${azurerm_eventhub.binary.name}"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 }
 
@@ -95,8 +103,8 @@ resource "azurerm_eventhub_namespace_authorization_rule" "writer_pipeline" {
   manage = false
 }
 
-resource "azurerm_eventhub_namespace_authorization_rule" "reader_telegraf" {
-  name = "telegraf"
+resource "azurerm_eventhub_namespace_authorization_rule" "reader_metrics" {
+  name = "metrics"
   resource_group_name = "${azurerm_resource_group.rg.name}"
   namespace_name = "${azurerm_eventhub_namespace.kafka.name}"
   listen = true
@@ -110,9 +118,9 @@ resource "azurerm_key_vault_secret" "writer_pipeline" {
   key_vault_id = "${var.key_vault_id}"
 }
 
-resource "azurerm_key_vault_secret" "reader_telegraf" {
-  name     = "eh-telegraf"
-  value    = "${azurerm_eventhub_namespace_authorization_rule.reader_telegraf.primary_connection_string}"
+resource "azurerm_key_vault_secret" "reader_metrics" {
+  name     = "eh-metrics"
+  value    = "${azurerm_eventhub_namespace_authorization_rule.reader_metrics.primary_connection_string}"
   key_vault_id = "${var.key_vault_id}"
 }
 

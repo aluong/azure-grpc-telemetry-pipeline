@@ -56,20 +56,14 @@ validate_arguments() {
 }
 
 start() {
+    # Retrieve secrets for pipeline
     az login --identity --allow-no-subscriptions
+    export PIPELINE_EH_BROKERS=$BROKERS
+    export PIPELINE_EH_CONNSTRING=`az keyvault secret show --id $SECRET_ID --query value --output tsv`
 
-    HOSTNAME=`hostname`
-    openssl req -newkey rsa:4096 -nodes -keyout /etc/grafana/grafana_key.pem -x509 -out /etc/grafana/grafana_cert.pem  -subj "/CN=${HOSTNAME}" 
-
-    CONN_STRING=`az keyvault secret show --id $SECRET_ID --query value --output tsv`
-
-    cat << EOF > /etc/default/telegraf
-CONNSTRING="$CONN_STRING"
-BROKER="$BROKERS"
-EOF
-
-    systemctl restart grafana-server.service
-    systemctl restart telegraf.service
+    # Launch pipeline
+    touch /etc/pipeline/pipeline.log
+    /etc/pipeline/pipeline -log=/etc/pipeline/pipeline.log -config=/etc/pipeline/pipeline.conf -pem=/etc/pipeline/pipeline.pem
 }
 
 parse_arguments "$@"

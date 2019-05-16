@@ -5,8 +5,7 @@
   vars:
     influx_download_url: https://dl.influxdata.com/influxdb/releases/influxdb-1.7.6.x86_64.rpm
     grafana_download_url: https://dl.grafana.com/oss/release/grafana-6.1.6-1.x86_64.rpm
-    telegraf_download_url: https://dl.influxdata.com/telegraf/releases/telegraf-1.10.3-1.x86_64.rpm
-    event_hub_root_cert_download_url: https://www.digicert.com/CACerts/BaltimoreCyberTrustRoot.crt.pem
+    pipeline_download_url: https://github.com/cisco-ie/pipeline-gnmi/raw/master/bin/pipeline
 
   tasks:
 
@@ -20,11 +19,15 @@
       name: influxdb
       enabled: true
       masked: false
+      state: started
 
   - name: Copy Influx config
     copy:
       src: ./influxdb.conf
       dest: /etc/influxdb/influxdb.conf
+
+  - name: Create telemetry database
+    shell: influx -execute 'create database telemetry'
 
   - name: Install Grafana
     yum:
@@ -42,6 +45,9 @@
       src: ./grafana.ini
       dest: /etc/grafana/grafana.ini
 
+  - name: Create self-signed cert for Grafana
+    shell: openssl req -newkey rsa:4096 -nodes -keyout /etc/grafana/grafana_key.pem -x509 -out /etc/grafana/grafana_cert.pem  -subj "/CN=grafana" 
+
   - name: Allow Grafana to bind to privileged ports
     shell: setcap 'cap_net_bind_service=+ep' /usr/sbin/grafana-server
 
@@ -53,25 +59,31 @@
       zone: public
       immediate: yes
 
-  - name: Install telegraf
-    yum:
-      name: "{{ telegraf_download_url }}"
+  - name: Create directory /etc/pipeline
+    file:
+      path: /etc/pipeline
+      state: directory
 
-  - name: Enable telegraf
-    systemd:
-      name: telegraf
-      enabled: true
-      masked: false
-
-  - name: Copy telegraf config
-    copy:
-      src: telegraf.conf
-      dest: /etc/telegraf/telegraf.conf
-
-  - name: Download Baltimore CyberTrust Root cert
+  - name: Download cisco bigmuddy pipeline binary
     get_url:
-      url: "{{ event_hub_root_cert_download_url }}"
-      dest: /etc/telegraf/root.pem
+      url: '{{pipeline_download_url}}'
+      dest: /etc/pipeline/pipeline
+      mode: 0755
+
+  - name: Copy cisco bigmuddy pipeline config file
+    copy:
+      src: ./pipeline-viz.conf
+      dest: /etc/pipeline/pipeline.conf
+
+  - name: Copy metrics.json
+    copy:
+      src: ./metrics.json
+      dest: /etc/pipeline/metrics.json
+
+  - name: Copy pipeline.pem
+    copy:
+      src: ./pipeline.pem
+      dest: /etc/pipeline/pipeline.pem
 
   - name: Import the Microsoft repository key.
     rpm_key:

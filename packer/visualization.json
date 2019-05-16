@@ -8,8 +8,7 @@
         "location": "{{env `PACKER_IMAGE_LOCATION`}}",
         "influx_download_url": "{{env `PACKER_INFLUX_DOWNLOAD_URL`}}",
         "grafana_download_url": "{{env `PACKER_GRAFANA_DOWNLOAD_URL`}}",
-        "telegraf_download_url": "{{env `PACKER_TELEGRAF_DOWNLOAD_URL`}}",
-        "event_hub_root_cert_download_url": "{{env `PACKER_EVENT_HUB_ROOT_CERT_DOWNLOAD_URL`}}"
+        "pipeline_download_url": "{{env `PACKER_PIPELINE_DOWNLOAD_URL`}}"
     },
     "sensitive-variables": ["client_secret"],
     "builders": [
@@ -37,7 +36,7 @@
         {
             "type": "ansible",
             "playbook_file": "../ansible/visualization.playbook.yml",
-            "extra_arguments": ["--extra-vars", "influx_download_url={{user `influx_download_url`}} grafana_download_url={{user `grafana_download_url`}} telegraf_download_url={{user `telegraf_download_url`}} event_hub_root_cert_download_url={{user `event_hub_root_cert_download_url`}}"]
+            "extra_arguments": ["--extra-vars", "influx_download_url={{user `influx_download_url`}} grafana_download_url={{user `grafana_download_url`}} pipeline_download_url={{user `pipeline_download_url`}}"]
         },
         {
             "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",

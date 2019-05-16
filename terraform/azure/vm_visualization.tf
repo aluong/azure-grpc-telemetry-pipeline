@@ -42,7 +42,7 @@ resource "azurerm_virtual_machine" "visualization" {
     admin_password = "${uuid()}"
     custom_data = <<-EOF
 BROKERS=${local.event_hub_namespace}.servicebus.windows.net:9093
-SECRET_ID=${azurerm_key_vault_secret.reader_telegraf.id}
+SECRET_ID=${azurerm_key_vault_secret.reader_metrics.id}
   EOF
   }
 
