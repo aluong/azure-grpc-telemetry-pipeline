@@ -69,6 +69,8 @@ start() {
     # Append grafana variables to grafana-server
     grafana_server_file=/etc/sysconfig/grafana-server
     if grep -q GF_* $grafana_server_file ; then
+      echo "Skip appending Grafana AAD Environment variables"
+    else
       echo "Appending Grafana AAD Environment variables"
 
       # Retreive secrets for Grafana AAD auth
@@ -82,9 +84,6 @@ start() {
 
       # Restart grafana
       systemctl restart grafana-server.service
-
-    else
-      echo "Skip appending Grafana AAD Environment variables"
     fi
 
     # Launch pipeline
