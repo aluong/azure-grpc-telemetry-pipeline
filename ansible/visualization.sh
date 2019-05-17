@@ -10,6 +10,11 @@ show_usage() {
   echo "Config should be in the following format, then base64 encoded:\n"
   echo "BROKERS=myeventhubnamespace.servicebus.windows.net:9093"
   echo "SECRET_ID=https://mykeyvault.vault.azure.net/secrets/mysecret/myversion"
+  echo "GF_AUTH_GENERIC_OAUTH_CLIENT_ID=11111111-1111-1111-1111-1111111111"
+  echo "GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=aaaabbbbccccdddd"
+  echo "GF_SERVER_ROOT_URL=https://vm-12345.westus2.cloudapp.azure.com"
+  echo "GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://login.microsoftonline.com/22222222-2222-2222-2222222222/oauth2/authorize"
+  echo "GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://login.microsoftonline.com/22222222-2222-2222-2222222222/oauth2/token"
 }
 
 parse_arguments() {
@@ -60,6 +65,27 @@ start() {
     az login --identity --allow-no-subscriptions
     export PIPELINE_EH_BROKERS=$BROKERS
     export PIPELINE_EH_CONNSTRING=`az keyvault secret show --id $SECRET_ID --query value --output tsv`
+
+    # Append grafana variables to grafana-server
+    grafana_server_file=/etc/sysconfig/grafana-server
+    if grep -q GF_* $grafana_server_file ; then
+      echo "Appending Grafana AAD Environment variables"
+
+      # Retreive secrets for Grafana AAD auth
+      grafana_aad_secret=`az keyvault secret show --id $GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET_KV_ID --query value --output tsv`
+
+      echo "GF_AUTH_GENERIC_OAUTH_CLIENT_ID=$GF_AUTH_GENERIC_OAUTH_CLIENT_ID" >> $grafana_server_file
+      echo "GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=$grafana_aad_secret" >> $grafana_server_file
+      echo "GF_SERVER_ROOT_URL=$GF_SERVER_ROOT_URL" >> $grafana_server_file
+      echo "GF_AUTH_GENERIC_OAUTH_AUTH_URL=$GF_AUTH_GENERIC_OAUTH_AUTH_URL" >> $grafana_server_file
+      echo "GF_AUTH_GENERIC_OAUTH_TOKEN_URL=$GF_AUTH_GENERIC_OAUTH_TOKEN_URL" >> $grafana_server_file
+
+      # Restart grafana
+      systemctl restart grafana-server.service
+
+    else
+      echo "Skip appending Grafana AAD Environment variables"
+    fi
 
     # Launch pipeline
     touch /etc/pipeline/pipeline.log

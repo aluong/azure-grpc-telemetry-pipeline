@@ -1,5 +1,8 @@
 locals {
   visualization_name = "viz-${local.baseName}"
+  grafana_auth_generic_oauth_auth_url="https://login.microsoftonline.com/${var.grafana_aad_directory_id}/oauth2/authorize"
+  grafana_auth_generic_oauth_token_url="https://login.microsoftonline.com/${var.grafana_aad_directory_id}/oauth2/token"
+
 }
 
 resource "azurerm_network_interface" "visualization" {
@@ -43,6 +46,11 @@ resource "azurerm_virtual_machine" "visualization" {
     custom_data = <<-EOF
 BROKERS=${local.event_hub_namespace}.servicebus.windows.net:9093
 SECRET_ID=${azurerm_key_vault_secret.reader_metrics.id}
+GF_AUTH_GENERIC_OAUTH_CLIENT_ID=${var.grafana_aad_client_id}
+GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET_KV_ID=${var.grafana_aad_client_secret_keyvault_secret_id}
+GF_SERVER_ROOT_URL=${var.grafana_root_url} 
+GF_AUTH_GENERIC_OAUTH_AUTH_URL=${local.grafana_auth_generic_oauth_auth_url}
+GF_AUTH_GENERIC_OAUTH_TOKEN_URL=${local.grafana_auth_generic_oauth_token_url}
   EOF
   }
 

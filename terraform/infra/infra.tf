@@ -86,6 +86,12 @@ resource "azurerm_key_vault_access_policy" "ado_service_connection" {
   ]
 }
 
+resource "azurerm_key_vault_secret" "grafana_aad_client_secret" {
+  name     = "grafana-aad-secret"
+  value    = "${var.grafana_aad_client_secret}"
+  key_vault_id = "${azurerm_key_vault.kv.id}"
+}
+
 resource "azurerm_network_security_group" "sandboxNSG" {
   name                = "nsg-sandbox"
   location            = "${azurerm_resource_group.infra_rg.location}"
@@ -174,4 +180,8 @@ output "visualization_identity_id" {
 
 output "storage_diagnostics_logs_id" {
   value = "${azurerm_storage_account.diagnostic_logs.id}"
+}
+
+output "grafana_aad_client_secret_keyvault_secret_id" {
+  value = "${azurerm_key_vault_secret.grafana_aad_client_secret.id}"
 }

@@ -83,3 +83,25 @@ variable "key_vault_id" {
   description = "Resource ID of the Key Vault to be used for storing application secrets."
   "type" = "string"
 }
+
+# Grafana
+
+variable "grafana_aad_client_id" {
+  description = "Client id used for Grafana AAD authentication."
+  "type" = "string"
+}
+
+variable "grafana_aad_client_secret_keyvault_secret_id" {
+  description = "Client secret Key Vault id for Grafana AAD authentication."
+  "type" = "string"
+}
+
+variable "grafana_aad_directory_id" {
+  description = "Directory id used for Grafana AAD authentication."
+  "type" = "string"
+}
+
+variable "grafana_root_url" {
+  description = "Root url used for Grafana AAD authentication."
+  "type" = "string"
+}
