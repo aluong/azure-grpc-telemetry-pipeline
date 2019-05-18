@@ -90,6 +90,7 @@ resource "azurerm_key_vault_secret" "grafana_aad_client_secret" {
   name     = "grafana-aad-secret"
   value    = "${var.grafana_aad_client_secret}"
   key_vault_id = "${azurerm_key_vault.kv.id}"
+  depends_on = ["azurerm_key_vault_access_policy.ado_service_connection"]
 }
 
 resource "azurerm_network_security_group" "sandboxNSG" {
