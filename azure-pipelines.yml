@@ -10,7 +10,7 @@ variables:
   pipelineResourceGroup: $[coalesce(variables['pipelineResourceGroupOverride'], 'network-telemetry-pipeline')]
   imageResourceGroup: $[coalesce(variables['imageResourceGroupOverride'], 'network-telemetry-images')]
   location: $[coalesce(variables['locationOverride'], 'westus2')]
-  pipelineDownloadUrl: $[coalesce(variables['pipelineDownloadUrlOverride'], 'https://nobun.blob.core.windows.net/pipeline/pipeline?sp=r&st=2019-04-23T17:39:32Z&se=2020-01-01T08:00:00Z&spr=https&sv=2018-03-28&sig=JwlKMzAxu85iLrCTcMoA5JN0gAFOCuWUFc4LWn%2FDArs%3D&sr=b')]
+  pipelineDownloadUrl: $[coalesce(variables['pipelineDownloadUrlOverride'], 'https://github.com/noelbundick/pipeline-gnmi/releases/download/custom-build-1/pipeline')]
   influxDownloadUrl: $[coalesce(variables['influxDownloadUrlOverride'], 'https://dl.influxdata.com/influxdb/releases/influxdb-1.7.6.x86_64.rpm')]
   grafanaDownloadUrl: $[coalesce(variables['grafanaDownloadUrlOverride'], 'https://dl.grafana.com/oss/release/grafana-6.1.6-1.x86_64.rpm')]
   # Uncomment the following variables here, or set them in the Azure Pipelines UX
